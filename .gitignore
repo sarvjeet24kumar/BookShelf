@@ -1,0 +1,16 @@
+__pycache__/
+build/
+dist/
+wheels/
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
