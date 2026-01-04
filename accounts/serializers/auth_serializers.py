@@ -3,6 +3,7 @@ from rest_framework import serializers
 from accounts.models import Users
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.contrib.auth import authenticate
 from common.constants import MIN_PASSWORD_LENGTH
 
 
@@ -100,3 +101,32 @@ class SignupSerializer(serializers.ModelSerializer):
             )
 
         return cleaned.capitalize()
+
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True, style={"input_type": "password"})
+
+    def validate(self, attrs):
+        username = attrs.get("username")
+        password = attrs.get("password")
+
+        if not username or not password:
+            raise serializers.ValidationError("username and password are required.")
+
+        user = authenticate(
+            request=self.context.get("request"),
+            username=username,
+            password=password,
+        )
+
+        if not user:
+            raise serializers.ValidationError({"error": "Invalid credentials."})
+
+        if user.deleted_at:
+            raise serializers.ValidationError(
+                {"error": "This account has been deleted."}
+            )
+
+        attrs["user"] = user
+        return attrs
