@@ -15,3 +15,14 @@ class IsAdmin(BasePermission):
             raise PermissionDenied("Only admins can access this resource.")
 
         return True
+
+
+class IsUser(BasePermission):
+    message = "Only users are allowed to access this endpoint."
+
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and request.user.role == "USER"
+        )
