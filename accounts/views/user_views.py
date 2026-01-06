@@ -9,22 +9,17 @@ from accounts.serializers.user_serializers import (
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
+from common.pagination import CommonPagination
 
 
 User = get_user_model()
-
-
-class UserPagination(PageNumberPagination):
-    page_size = 10
-    page_size_query_param = "page_size"
-    max_page_size = 100
 
 
 class UserListView(ListAPIView):
 
     permission_classes = [IsAdmin]
     serializer_class = UserListSerializer
-    pagination_class = UserPagination
+    pagination_class = CommonPagination
 
     def get_queryset(self):
         queryset = User.objects.filter(role="USER").order_by("-created_at")
@@ -79,12 +74,6 @@ class UserDetailView(RetrieveDestroyAPIView):
         return Response(
             {
                 "message": "User deleted successfully.",
-                "deleted_user": {
-                    "id": str(user.id),
-                    "username": user.username,
-                    "email": user.email,
-                    "deleted_at": user.deleted_at.isoformat(),
-                },
             },
-            status=status.HTTP_200_OK,
+            status=status.HTTP_204_NO_CONTENT,
         )
