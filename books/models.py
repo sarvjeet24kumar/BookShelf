@@ -9,7 +9,6 @@ User = get_user_model()
 
 class Genre(BaseModel):
     name = models.CharField(max_length=100, unique=True)
-    description = models.TextField(blank=True, null=True)
 
     class Meta:
         db_table = "genres"
@@ -36,7 +35,7 @@ class Book(BaseModel):
     )
 
     genres = models.ManyToManyField(Genre, through="BookGenre", related_name="books")
-
+    is_active = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -48,7 +47,6 @@ class Book(BaseModel):
 
 
 class UserBook(BaseModel):
-    
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_books")
 
