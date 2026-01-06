@@ -1,8 +1,6 @@
 from rest_framework import serializers
-from .models import Book, UserBook
-from rest_framework import serializers
 from django.db import transaction
-from .models import Book, Genre, BookGenre
+from .models import Book, Genre, BookGenre, UserBook
 
 
 class BookListSerializer(serializers.ModelSerializer):
@@ -18,6 +16,7 @@ class BookListSerializer(serializers.ModelSerializer):
             "isbn",
             "published_year",
             "status",
+            "is_active",
             "genres",
             "created_at",
         ]
@@ -40,7 +39,12 @@ class BookListSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         user = self.context["request"].user
 
-        if user.role == "ADMIN":
+        if user.role != "ADMIN":
+            representation.pop("is_active")
+
+        request = self.context.get("request")
+
+        if request and request.resolver_match.view_name != "my-books":
             representation.pop("status", None)
 
         return representation
@@ -53,10 +57,20 @@ class BookCreateSerializer(serializers.Serializer):
     published_year = serializers.IntegerField()
     genres = serializers.ListField(child=serializers.CharField(max_length=100))
 
-    def validate_isbn(self, value):
-        if Book.objects.filter(isbn=value, deleted_at__isnull=True).exists():
-            raise serializers.ValidationError("Book already exists.")
-        return value
+    def validate(self, attrs):
+        if Book.objects.filter(isbn=attrs["isbn"], deleted_at__isnull=True).exists():
+            raise serializers.ValidationError({"error": "isbn already exist"})
+        if Book.objects.filter(isbn=attrs["isbn"], deleted_at__isnull=True).exists():
+            raise serializers.ValidationError({"error": "isbn already exist"})
+        request = self.context.get("request")
+        user = request.user
+        print(attrs)
+        if user.role == "ADMIN":
+            attrs["is_active"] = True
+        else:
+            attrs["is_active"] = False
+        print(attrs)
+        return super().validate(attrs)
 
     @transaction.atomic
     def create(self, validated_data):
