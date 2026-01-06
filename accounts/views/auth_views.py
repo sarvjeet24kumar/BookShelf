@@ -18,17 +18,13 @@ class SignupView(APIView):
             user = serializer.save()
 
             return Response(
-                {
-                    "success": True,
-                    "message": "User registered successfully",
-                    "data": {"user_id": str(user.id)},
-                },
+                {"user_id": str(user.id)},
                 status=status.HTTP_201_CREATED,
             )
 
         except ValidationError as e:
             return Response(
-                {"success": False, "message": "Validation failed", "errors": e.detail},
+                {"errors": e.detail},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -60,7 +56,6 @@ class LoginView(APIView):
 
             return Response(
                 {
-                    "message": "Login successful",
                     "access": str(refresh.access_token),
                     "refresh": str(refresh),
                 },
@@ -78,7 +73,7 @@ class LogoutView(APIView):
 
             if not refresh_token:
                 return Response(
-                    {"detail": "Refresh token is required."},
+                    {"error": "Refresh token is required."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
