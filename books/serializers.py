@@ -53,15 +53,31 @@ class BookListSerializer(serializers.ModelSerializer):
 class BookCreateSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=255)
     author = serializers.CharField(max_length=255)
-    isbn = serializers.CharField(max_length=20)
+    isbn = serializers.CharField(max_length=13)
     published_year = serializers.IntegerField()
     genres = serializers.ListField(child=serializers.CharField(max_length=100))
 
+    # def validate_isbn(self, value):
+    #     if len(value) > 13:
+    #         raise serializers.ValidationError(
+    #             {"error": "ISBN cannot be more than 13 characters."}
+    #         )
+
+    #     if Book.objects.filter(isbn=value, deleted_at__isnull=True).exists():
+    #         raise serializers.ValidationError("ISBN already exists.")
+
+    #     return value
+
     def validate(self, attrs):
-        if Book.objects.filter(isbn=attrs["isbn"], deleted_at__isnull=True).exists():
-            raise serializers.ValidationError({"error": "isbn already exist"})
-        if Book.objects.filter(isbn=attrs["isbn"], deleted_at__isnull=True).exists():
-            raise serializers.ValidationError({"error": "isbn already exist"})
+        isbn = attrs.get("isbn")
+        if len(isbn) > 13:
+            raise serializers.ValidationError(
+                {"error": "ISBN cannot be more than 13 characters."}
+            )
+
+        # duplicate ISBN check
+        if Book.objects.filter(isbn=isbn, deleted_at__isnull=True).exists():
+            raise serializers.ValidationError({"error": "ISBN already exists."})
         request = self.context.get("request")
         user = request.user
         print(attrs)

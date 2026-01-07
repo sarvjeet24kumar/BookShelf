@@ -18,7 +18,7 @@ class SignupView(APIView):
             user = serializer.save()
 
             return Response(
-                {"user_id": str(user.id)},
+                {"messsage": "Registered Successfully"},
                 status=status.HTTP_201_CREATED,
             )
 
@@ -31,12 +31,7 @@ class SignupView(APIView):
         except Exception:
             return Response(
                 {
-                    "success": False,
-                    "message": "Internal server error",
-                    "error": {
-                        "code": "SERVER_ERROR",
-                        "detail": "Something went wrong. Please try again later.",
-                    },
+                    "error": "Something went wrong. Please try again later.",
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
@@ -86,11 +81,11 @@ class LogoutView(APIView):
 
         except TokenError:
             return Response(
-                {"detail": "Invalid or expired token."},
+                {"error": "Invalid or expired token."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception:
             return Response(
-                {"detail": "An error occurred during logout."},
+                {"error": "An error occurred during logout."},
                 status=status.HTTP_400_BAD_REQUEST,
             )

@@ -7,6 +7,7 @@ from rest_framework import status
 from .models import Book, UserBook
 from .serializers import BookListSerializer, BookCreateSerializer
 from common.pagination import CommonPagination
+from common.enums import BookStatus
 
 
 class BookListCreateView(APIView):
@@ -15,6 +16,7 @@ class BookListCreateView(APIView):
         user = request.user
         genre_filter = request.query_params.get("genre")
         title_filter = request.query_params.get("title")
+        is_active = request.query_params.get("is_active")
 
         queryset = Book.objects.filter(deleted_at__isnull=True)
         if user.role != "ADMIN":
@@ -27,6 +29,9 @@ class BookListCreateView(APIView):
 
         if title_filter:
             queryset = queryset.filter(title__contains=title_filter)
+
+        if is_active and user.role == "ADMIN":
+            queryset = queryset.filter(is_active=is_active)
 
         queryset = queryset.distinct().prefetch_related("book_genres__genre")
         paginator = CommonPagination()
@@ -49,6 +54,96 @@ class BookListCreateView(APIView):
         return Response(
             BookListSerializer(book, context={"request": request}).data,
             status=status.HTTP_201_CREATED,
+        )
+
+
+class BookDetailView(APIView):
+
+    def get_book(self, id):
+        try:
+            book_uuid = uuid.UUID(str(id))
+        except (ValueError, TypeError):
+            return None, Response(
+                {"error": "Invalid book_id. Must be a valid UUID."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        book = Book.objects.filter(id=book_uuid, deleted_at__isnull=True).first()
+
+        if not book:
+            return None, Response(
+                {"error": "Book not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return book, None
+
+    def get(self, request, id):
+        book, error = self.get_book(id)
+        if error:
+            return error
+
+        if request.user.role != "ADMIN" and not book.is_active:
+            return Response(
+                {"error": "Book not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = BookListSerializer(book, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request, id):
+
+        if request.user.role != "ADMIN":
+            return Response(
+                {"error": "Only admins can update books."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        book, error = self.get_book(id)
+        if error:
+            return error
+
+        if "title" in request.data:
+            book.title = request.data["title"]
+        if "author" in request.data:
+            book.author = request.data["author"]
+        if "isbn" in request.data:
+            book.isbn = request.data["isbn"]
+        if "published_year" in request.data:
+            book.published_year = request.data["published_year"]
+        if "is_active" in request.data:
+            book.is_active = request.data["is_active"]
+        book.save()
+
+        if "genres" in request.data:
+
+            book.book_genres.update(deleted_at=timezone.now())
+            for genre_name in request.data["genres"]:
+                genre, _ = Genre.objects.get_or_create(name=genre_name.strip())
+                BookGenre.objects.create(book=book, genre=genre)
+
+        serializer = BookListSerializer(book, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, id):
+        if request.user.role != "ADMIN":
+            return Response(
+                {"error": "Only admins can delete books."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        book, error = self.get_book(id)
+        if error:
+            return error
+
+        book.deleted_at = timezone.now()
+        book.save()
+
+        book.book_genres.update(deleted_at=timezone.now())
+
+        return Response(
+            status=status.HTTP_204_NO_CONTENT,
         )
 
 
@@ -85,6 +180,12 @@ class MyBookView(APIView):
         if not book_id:
             return Response(
                 {"detail": "book_id is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        valid_statuses = BookStatus.values
+        if status_value not in valid_statuses:
+            return Response(
+                {"error": f"Invalid status. Allowed values are: {valid_statuses}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -172,7 +273,12 @@ class MyBookDetailView(APIView):
                 {"error": "status is required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
+        valid_statuses = BookStatus.values
+        if status_value not in valid_statuses:
+            return Response(
+                {"error": f"Invalid status. Allowed values are: {valid_statuses}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         user_book.status = status_value
         user_book.save(update_fields=["status", "updated_at"])
 
@@ -186,129 +292,9 @@ class MyBookDetailView(APIView):
         if error:
             return error
 
-        user_book.delete()
+        user_book.deleted_at = timezone.now()
+        user_book.save()
 
         return Response(
-            {"message": "Book removed from your list."},
             status=status.HTTP_204_NO_CONTENT,
-        )
-
-
-class BookDetailView(APIView):
-
-    def get_book(self, id):
-        try:
-            book_uuid = uuid.UUID(str(id))
-        except (ValueError, TypeError):
-            return None, Response(
-                {"error": "Invalid book_id. Must be a valid UUID."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        book = Book.objects.filter(id=book_uuid, deleted_at__isnull=True).first()
-
-        if not book:
-            return None, Response(
-                {"error": "Book not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        return book, None
-
-    def get(self, request, id):
-        book, error = self.get_book(id)
-        if error:
-            return error
-
-        # Users can only see active books, admins can see all
-        if request.user.role != "ADMIN" and not book.is_active:
-            return Response(
-                {"error": "Book not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        serializer = BookListSerializer(book, context={"request": request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def put(self, request, id):
-        if request.user.role != "ADMIN":
-            return Response(
-                {"error": "Only admins can update books."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        book, error = self.get_book(id)
-        if error:
-            return error
-
-        book.title = request.data.get("title", book.title)
-        book.author = request.data.get("author", book.author)
-        book.isbn = request.data.get("isbn", book.isbn)
-        book.published_year = request.data.get("published_year", book.published_year)
-        book.is_active = request.data.get("is_active", book.is_active)
-        book.save()
-
-        genres = request.data.get("genres")
-        if genres is not None:
-            # Remove existing genres
-            book.book_genres.update(deleted_at=timezone.now())
-
-            for genre_name in genres:
-                genre, _ = Genre.objects.get_or_create(name=genre_name.strip())
-                BookGenre.objects.create(book=book, genre=genre)
-
-        serializer = BookListSerializer(book, context={"request": request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def patch(self, request, id):
-
-        if request.user.role != "ADMIN":
-            return Response(
-                {"error": "Only admins can update books."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        book, error = self.get_book(id)
-        if error:
-            return error
-
-        if "title" in request.data:
-            book.title = request.data["title"]
-        if "author" in request.data:
-            book.author = request.data["author"]
-        if "isbn" in request.data:
-            book.isbn = request.data["isbn"]
-        if "published_year" in request.data:
-            book.published_year = request.data["published_year"]
-        if "is_active" in request.data:
-            book.is_active = request.data["is_active"]
-        book.save()
-
-        if "genres" in request.data:
-
-            book.book_genres.update(deleted_at=timezone.now())
-            for genre_name in request.data["genres"]:
-                genre, _ = Genre.objects.get_or_create(name=genre_name.strip())
-                BookGenre.objects.create(book=book, genre=genre)
-
-        serializer = BookListSerializer(book, context={"request": request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def delete(self, request, id):
-        if request.user.role != "ADMIN":
-            return Response(
-                {"error": "Only admins can delete books."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        book, error = self.get_book(id)
-        if error:
-            return error
-
-        book.deleted_at = timezone.now()
-        book.save()
-
-        return Response(
-            {"message": "Book deleted successfully."},
-            status=status.HTTP_200_OK,
         )
