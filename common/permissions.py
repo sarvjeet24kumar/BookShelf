@@ -18,7 +18,7 @@ class IsAdmin(BasePermission):
 
 
 class IsUser(BasePermission):
-    message = "Only users are allowed to access this endpoint."
+    message = "Only users can access this resource."
 
     def has_permission(self, request, view):
         return (

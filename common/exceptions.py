@@ -13,5 +13,7 @@ def custom_exception_handler(exc, context):
         # Permission errors
         if isinstance(exc, (PermissionDenied, NotAuthenticated)):
             response.data = {"error": response.data.get("detail")}
+        elif isinstance(exc, ValidationError):
+            response.data = {"errors": response.data}
 
     return response
