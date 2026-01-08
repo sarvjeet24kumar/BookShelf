@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, MaxValueValidator
 from common.models import BaseModel
-from common.enums import BookStatus
+from common.enums import BookStatus, RequestStatus
 
 User = get_user_model()
 
@@ -35,7 +35,18 @@ class Book(BaseModel):
     )
 
     genres = models.ManyToManyField(Genre, through="BookGenre", related_name="books")
-    is_active = models.BooleanField(default=False)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="created_books",
+        null=True,
+        blank=True,
+    )
+    request_status = models.CharField(
+        max_length=20,
+        choices=RequestStatus.choices,
+        default=RequestStatus.PENDING,
+    )
     deleted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
