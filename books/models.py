@@ -24,7 +24,7 @@ class Book(BaseModel):
     author = models.CharField(max_length=255)
 
     published_year = models.SmallIntegerField(
-        validators=[MinValueValidator(1000), MaxValueValidator(2100)],
+        validators=[MinValueValidator(1000), MaxValueValidator(2026)],
         null=True,
         blank=True,
     )

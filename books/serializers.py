@@ -3,6 +3,7 @@ import uuid
 from rest_framework import serializers
 from django.db import transaction
 from .models import Book, Genre, BookGenre, UserBook
+from common.enums import RequestStatus
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -96,15 +97,15 @@ class BookValidationMixin:
         return value
 
     def validate_published_year(self, value):
-      
-        if value < 1000 or value > 2100:
+
+        if value < 1000 or value > 2026:
             raise serializers.ValidationError(
-                "Published year must be between 1000 and 2100."
+                "Published year must be between 1000 and 2026."
             )
         return value
 
     def validate_genres_data(self, genre_ids):
-       
+
         valid_genre_uuids = []
         invalid_genre_ids = []
 
@@ -130,7 +131,7 @@ class BookValidationMixin:
                 }
             )
 
-        return list(existing_genres.values_list("id", flat=True)), invalid_genre_ids
+        return list(existing_genres.values_list("id", flat=True))
 
 
 class BookCreateSerializer(BookValidationMixin, serializers.Serializer):
@@ -150,19 +151,16 @@ class BookCreateSerializer(BookValidationMixin, serializers.Serializer):
         if Book.objects.filter(isbn=isbn).exists():
             raise serializers.ValidationError({"isbn": "ISBN already exists."})
 
-      
         genre_ids = attrs.get("genres", [])
-        existing_genre_ids, invalid_genre_ids = self.validate_genres_data(genre_ids)
+        existing_genre_ids = self.validate_genres_data(genre_ids)
 
         attrs["existing_genre_ids"] = existing_genre_ids
-        attrs["invalid_genre_ids"] = invalid_genre_ids
 
         return super().validate(attrs)
 
     @transaction.atomic
     def create(self, validated_data):
         existing_genre_ids = validated_data.pop("existing_genre_ids", [])
-        validated_data.pop("invalid_genre_ids", None)
         validated_data.pop("genres", None)
 
         request = self.context.get("request")
@@ -189,9 +187,6 @@ class BookUpdateSerializer(BookValidationMixin, serializers.Serializer):
     request_status = serializers.CharField(max_length=20, required=False)
 
     def validate_request_status(self, value):
-    
-        from common.enums import RequestStatus
-
         new_status = value.upper()
         valid_statuses = [choice[0] for choice in RequestStatus.choices]
 
@@ -202,8 +197,6 @@ class BookUpdateSerializer(BookValidationMixin, serializers.Serializer):
         return new_status
 
     def update(self, instance, validated_data):
-    
-        # Update allowed fields only (ISBN and genres are not updateable)
         instance.title = validated_data.get("title", instance.title)
         instance.author = validated_data.get("author", instance.author)
         instance.published_year = validated_data.get(
