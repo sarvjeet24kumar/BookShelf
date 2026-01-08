@@ -15,7 +15,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write("Seeding books and genres...")
 
-        # At least 10 genres
         genres_data = [
             {"name": "Fiction"},
             {"name": "Non-Fiction"},
@@ -45,7 +44,6 @@ class Command(BaseCommand):
             else:
                 self.stdout.write(f"  Genre exists: {genre.name}")
 
-        # Sample books with genres
         books_data = [
             {
                 "title": "Deep Learning",
@@ -126,7 +124,7 @@ class Command(BaseCommand):
                     "created_by": user,
                 },
             )
-            
+
             if created:
                 self.stdout.write(f"  Created book: {book.title}")
             else:
@@ -142,7 +140,6 @@ class Command(BaseCommand):
                     if bg_created:
                         self.stdout.write(f"    Linked to genre: {genre_name}")
 
-            # Add to first user's reading list
             if user:
                 UserBook.objects.get_or_create(
                     user=user,

@@ -28,19 +28,14 @@ class BookListCreateView(APIView):
         if request_status:
             request_status_filters = request_status.upper().split(",")
 
-        # Base queryset - all non-deleted books
         queryset = Book.objects.filter(deleted_at__isnull=True)
 
-        # Apply role-based filtering
         if user.role != "ADMIN":
-            # Regular users can see:
-            # 1. APPROVED books (publicly visible)
-            # 2. OR books created by themselves (any status)
+
             queryset = queryset.filter(
                 Q(request_status="APPROVED") | Q(created_by=user)
             )
 
-        # Both admin and users can filter by request_status
         if request_status_filters:
             queryset = queryset.filter(request_status__in=request_status_filters)
         if genre_filter:
@@ -127,7 +122,6 @@ class BookDetailView(APIView):
         if error:
             return error
 
-        # Use BookUpdateSerializer for validation and update
         serializer = BookUpdateSerializer(book, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         updated_book = serializer.save()
@@ -175,7 +169,6 @@ class MyBookView(APIView):
             .prefetch_related("book_genres__genre")
         )
         if status_filter:
-            # Validate and filter by reading status
             valid_statuses = BookStatus.values
             if status_filter.upper() in valid_statuses:
                 queryset = queryset.filter(user_books__status=status_filter.upper())
@@ -337,21 +330,9 @@ class MyBookDetailView(APIView):
 
 
 class GenreListView(APIView):
-    """
-    API endpoint to get a list of all genres.
-    Any authenticated user can access this endpoint.
-    """
-
     def get(self, request):
-        # Get all genres ordered by name
         queryset = Genre.objects.all().order_by("name")
-
-        # Apply pagination
         paginator = CommonPagination()
         paginated_queryset = paginator.paginate_queryset(queryset, request)
-
-        # Serialize the data
         serializer = GenreSerializer(paginated_queryset, many=True)
-
-        # Return paginated response
         return paginator.get_paginated_response(serializer.data)

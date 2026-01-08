@@ -46,7 +46,6 @@ class BookListSerializer(serializers.ModelSerializer):
         ]
 
     def get_created_by_email(self, book):
-        """Return the username of the creator, or None if no creator."""
         if book.created_by:
             return book.created_by.email
         return None
@@ -65,16 +64,11 @@ class BookListSerializer(serializers.ModelSerializer):
 
 
 class BookValidationMixin:
-    """
-    Mixin class containing shared validation logic for book serializers.
-    Used by both BookCreateSerializer and BookUpdateSerializer.
-    """
 
-    # Pattern for title/author: letters, numbers, spaces, underscores, apostrophes, periods, commas
     TEXT_PATTERN = r"^[a-zA-Z0-9\s_'.,]+$"
 
     def validate_title(self, value):
-        """Validate title - must contain at least one letter."""
+
         value = value.strip()
 
         if not re.search(r"[a-zA-Z]", value):
@@ -87,7 +81,7 @@ class BookValidationMixin:
         return value
 
     def validate_author(self, value):
-        """Validate author - must contain at least one letter."""
+
         value = value.strip()
 
         if not re.search(r"[a-zA-Z]", value):
@@ -102,7 +96,7 @@ class BookValidationMixin:
         return value
 
     def validate_published_year(self, value):
-        """Validate published year is within acceptable range (1000-2100)."""
+      
         if value < 1000 or value > 2100:
             raise serializers.ValidationError(
                 "Published year must be between 1000 and 2100."
@@ -110,10 +104,7 @@ class BookValidationMixin:
         return value
 
     def validate_genres_data(self, genre_ids):
-        """
-        Validate genre IDs and return existing genre IDs.
-        Returns tuple: (existing_genre_ids, invalid_genre_ids)
-        """
+       
         valid_genre_uuids = []
         invalid_genre_ids = []
 
@@ -159,7 +150,7 @@ class BookCreateSerializer(BookValidationMixin, serializers.Serializer):
         if Book.objects.filter(isbn=isbn).exists():
             raise serializers.ValidationError({"isbn": "ISBN already exists."})
 
-        # Validate genres using mixin method
+      
         genre_ids = attrs.get("genres", [])
         existing_genre_ids, invalid_genre_ids = self.validate_genres_data(genre_ids)
 
@@ -191,10 +182,6 @@ class BookCreateSerializer(BookValidationMixin, serializers.Serializer):
 
 
 class BookUpdateSerializer(BookValidationMixin, serializers.Serializer):
-    """
-    Serializer for updating book details.
-    Note: ISBN and genres are not updateable after creation.
-    """
 
     title = serializers.CharField(max_length=255, required=False)
     author = serializers.CharField(max_length=255, required=False)
@@ -202,7 +189,7 @@ class BookUpdateSerializer(BookValidationMixin, serializers.Serializer):
     request_status = serializers.CharField(max_length=20, required=False)
 
     def validate_request_status(self, value):
-        """Validate request_status is a valid choice."""
+    
         from common.enums import RequestStatus
 
         new_status = value.upper()
@@ -215,7 +202,7 @@ class BookUpdateSerializer(BookValidationMixin, serializers.Serializer):
         return new_status
 
     def update(self, instance, validated_data):
-        """Update book instance with validated data."""
+    
         # Update allowed fields only (ISBN and genres are not updateable)
         instance.title = validated_data.get("title", instance.title)
         instance.author = validated_data.get("author", instance.author)
