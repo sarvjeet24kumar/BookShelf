@@ -28,9 +28,20 @@ class UserDetailSerializer(serializers.ModelSerializer):
             "email",
             "first_name",
             "last_name",
-            "role",
-            "is_active",
-            "date_joined",
-            "last_login",
+            "creted_at",
         ]
         read_only_fields = fields
+
+
+class SelfUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "created_at",
+        )
+        read_only_fields = ("id", "username", "email", "created_at")

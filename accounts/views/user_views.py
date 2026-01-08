@@ -4,11 +4,13 @@ from django.contrib.auth import get_user_model
 from accounts.serializers.user_serializers import (
     UserListSerializer,
     UserDetailSerializer,
+    SelfUserSerializer,
 )
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
 from common.pagination import CommonPagination
+from rest_framework.views import APIView
 
 
 User = get_user_model()
@@ -76,4 +78,28 @@ class UserDetailView(RetrieveDestroyAPIView):
 
         return Response(
             status=status.HTTP_204_NO_CONTENT,
+        )
+
+
+class MeAPIView(APIView):
+
+    def get(self, request):
+        serializer = SelfUserSerializer(request.user)
+        return Response(serializer.data)
+
+    def delete(self, request):
+        if request.user.role != "ADMIN":
+
+            request.user.deleted_at = timezone.now()
+            request.user.is_active = False
+            request.user.save()
+
+            request.user.user_books.filter(deleted_at__isnull=True).update(
+                deleted_at=timezone.now()
+            )
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {"error": "Only User has access to this resource."},
+            status=status.HTTP_403_FORBIDDEN,
         )
