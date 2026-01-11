@@ -1,27 +1,41 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.core.validators import MinLengthValidator
 from common.enums import UserRole
+from common.models import BaseModel
+from common.validators import (
+    username_validator,
+    first_name_validator,
+    last_name_validator,
+    phone_number_validator,
+)
 from common.constants import (
     MAX_USERNAME_LENGTH,
-    MAX_EMAIL_LENGTH,
-    MAX_NAME_LENGTH,
+    MIN_USERNAME_LENGTH,
     MAX_PHONE_LENGTH,
+    MAX_ROLE_LENGTH,
+    MAX_MAX_LENGTH,
 )
-from common.models import BaseModel
 
 
-class Users(AbstractUser, BaseModel):
+class User(AbstractUser, BaseModel):
     username = models.CharField(
-        max_length=MAX_USERNAME_LENGTH, unique=True, blank=False, null=False
+        max_length=MAX_USERNAME_LENGTH,
+        unique=True,
+        validators=[MinLengthValidator(MIN_USERNAME_LENGTH), username_validator],
     )
-    email = models.EmailField(
-        max_length=MAX_EMAIL_LENGTH, unique=True, blank=False, null=False
+    email = models.EmailField(unique=True)
+    first_name = models.CharField(
+        max_length=MAX_MAX_LENGTH, validators=[first_name_validator]
     )
-    first_name = models.CharField(max_length=MAX_NAME_LENGTH, blank=False, null=False)
-    last_name = models.CharField(max_length=MAX_NAME_LENGTH, blank=True, null=True)
-    phone_no = models.CharField(max_length=MAX_PHONE_LENGTH, blank=False, null=False)
+    last_name = models.CharField(
+        max_length=MAX_MAX_LENGTH, validators=[last_name_validator]
+    )
+    phone_no = models.CharField(
+        max_length=MAX_PHONE_LENGTH, validators=[phone_number_validator]
+    )
     role = models.CharField(
-        max_length=10, choices=UserRole.choices, default=UserRole.USER
+        max_length=MAX_ROLE_LENGTH, choices=UserRole.choices, default=UserRole.USER
     )
     deleted_at = models.DateTimeField(null=True, blank=True)
 
