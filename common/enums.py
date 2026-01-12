@@ -17,3 +17,8 @@ class RequestStatus(models.TextChoices):
     PENDING = "PENDING", "Pending"
     APPROVED = "APPROVED", "Approved"
     REJECTED = "REJECTED", "Rejected"
+
+
+class Visibility(models.TextChoices):
+    PUBLIC = "PUBLIC", "Public"
+    PRIVATE = "PRIVATE", "Private"

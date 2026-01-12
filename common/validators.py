@@ -1,6 +1,8 @@
+import re
 from django.core.validators import RegexValidator, MinLengthValidator
 from rest_framework.serializers import ValidationError
-import re
+from django.utils import timezone
+from common.constants import MIN_PUBLISHED_YEAR
 
 
 username_validator = RegexValidator(
@@ -54,3 +56,43 @@ def validate_password(value):
         raise ValidationError("Password must contain at least one special character.")
 
     return value
+
+
+title_validator = RegexValidator(
+    regex=r"^[a-zA-Z0-9\s_'.,:;!?()@#&-]+$",
+    message="Title can only contain letters, numbers, spaces, and common punctuation (@, #, &, etc.).",
+    code="invalid_title",
+)
+
+author_validator = RegexValidator(
+    regex=r"^[A-Za-z][A-Za-z0-9 .'-]*$",
+    message="Author must start with a letter and may contain letters, numbers, spaces, dots, hyphens, or apostrophes.",
+    code="invalid_author",
+)
+
+
+def isbn_validator(value):
+    """
+    Validates ISBN-10 or ISBN-13 format.
+    - ISBN-10: 10 characters (digits, last can be 'X')
+    - ISBN-13: 13 digits
+    """
+
+    if not (re.match(r"^[0-9]{9}[0-9X]$", value) or re.match(r"^[0-9]{13}$", value)):
+        raise ValidationError(
+            "ISBN must be either 10 characters (digits, last can be 'X') or 13 digits."
+        )
+
+
+def published_year_validator(value):
+    """Validates published year is between 1000 and current year."""
+
+    current_year = timezone.now().year
+
+    if value < MIN_PUBLISHED_YEAR:
+        raise ValidationError(f"Published year must be at least {MIN_PUBLISHED_YEAR}.")
+
+    if value > current_year:
+        raise ValidationError(
+            f"Published year cannot be in the future. Maximum allowed is {current_year}."
+        )
