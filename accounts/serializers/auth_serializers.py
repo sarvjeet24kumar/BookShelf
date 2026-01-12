@@ -38,6 +38,12 @@ class SignupSerializer(serializers.ModelSerializer):
         validate_password(value)
         return value
 
+    def validate_first_name(self, value):
+        return value.strip()
+
+    def validate_last_name(self, value):
+        return value.strip()
+
     def validate(self, attrs):
         if attrs["password"] != attrs["password_confirm"]:
             raise serializers.ValidationError("Passwords don't match.")

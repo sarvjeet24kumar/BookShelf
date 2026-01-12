@@ -37,7 +37,6 @@ class User(AbstractUser, BaseModel):
     role = models.CharField(
         max_length=MAX_ROLE_LENGTH, choices=UserRole.choices, default=UserRole.USER
     )
-    deleted_at = models.DateTimeField(null=True, blank=True)
 
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = ["email", "first_name"]
