@@ -63,7 +63,6 @@ class BookView(APIView):
 class BookDetailView(APIView):
 
     def get_book_or_404(self, id):
-        """Get book by ID or raise NotFound exception."""
         book = Book.objects.filter(id=id, deleted_at__isnull=True).first()
 
         if not book:
