@@ -59,15 +59,9 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
         return User.objects.filter(deleted_at__isnull=True)
 
     def retrieve(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            serializer = self.get_serializer(instance)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except User.DoesNotExist:
-            return Response(
-                {"error": "User not found or has been deleted."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
@@ -120,7 +114,7 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
         with transaction.atomic():
             user.deleted_at = timezone.now()
             user.is_active = False
-            user.save()
+            user.save(update_fields=["deleted_at"])
 
             user.user_books.filter(deleted_at__isnull=True).update(
                 deleted_at=timezone.now()
@@ -162,7 +156,7 @@ class MeAPIView(APIView):
         with transaction.atomic():
             request.user.deleted_at = timezone.now()
             request.user.is_active = False
-            request.user.save()
+            request.user.save(update_fields=["deleted_at"])
 
             request.user.user_books.filter(deleted_at__isnull=True).update(
                 deleted_at=timezone.now()
