@@ -66,8 +66,10 @@ class UserDetailSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
 
         if password:
-            instance.set_password(password)
 
+            validate_password(password)
+            instance.set_password(password)
+        instance.full_clean(exclude=["deleted_at", "created_at", "updated_at", "id"])
         instance.save()
         return instance
 
@@ -80,6 +82,7 @@ class SelfUserSerializer(serializers.ModelSerializer):
             "username",
             "username",
             "password",
+            "email",
             "phone_no",
             "role",
             "first_name",
@@ -95,10 +98,14 @@ class SelfUserSerializer(serializers.ModelSerializer):
         password = validated_data.pop("password", None)
 
         for attr, value in validated_data.items():
+            if isinstance(value, str):
+                value = value.strip()
             setattr(instance, attr, value)
 
         if password:
+            validate_password(password)
             instance.set_password(password)
 
+        instance.full_clean(exclude=["deleted_at", "created_at", "updated_at", "id"])
         instance.save()
         return instance
