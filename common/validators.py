@@ -2,12 +2,13 @@ import re
 from django.core.validators import RegexValidator, MinLengthValidator
 from rest_framework.serializers import ValidationError
 from django.utils import timezone
-from common.constants import MIN_PUBLISHED_YEAR
+
+MIN_PUBLISHED_YEAR = 1000 
 
 
 username_validator = RegexValidator(
-    regex=r"^[a-zA-Z0-9_.-]+$",
-    message="Username must contain only letters, numbers, underscores, dots, or hyphens.",
+    regex=r"^[a-zA-Z][a-zA-Z0-9_.-]*$",
+    message="Username must start with a small letter and can only contain small letters, numbers, underscores, dots, or hyphens.",
     code="invalid_username",
 )
 
