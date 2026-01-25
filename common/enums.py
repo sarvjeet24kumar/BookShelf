@@ -4,6 +4,7 @@ from django.db import models
 class UserRole(models.TextChoices):
     USER = "USER", "User"
     ADMIN = "ADMIN", "Admin"
+    SUPER_ADMIN = "SUPER_ADMIN", "Super Admin"
 
 
 class BookStatus(models.TextChoices):
@@ -19,6 +20,21 @@ class RequestStatus(models.TextChoices):
     REJECTED = "REJECTED", "Rejected"
 
 
-class Visibility(models.TextChoices):
-    PUBLIC = "PUBLIC", "Public"
-    PRIVATE = "PRIVATE", "Private"
+
+class SubscriptionPlan(models.TextChoices):
+    FREE = "FREE", "Free"
+    PREMIUM = "PREMIUM", "Premium"
+
+
+class SubscriptionStatus(models.TextChoices):
+    CREATED = "CREATED", "Created"
+    ACTIVE = "ACTIVE", "Active"
+    CANCELLED = "CANCELLED", "Cancelled"
+
+
+class PaymentStatus(models.TextChoices):
+    CREATED = "CREATED", "Created"
+    PAID = "PAID", "Paid"
+    VERIFIED = "VERIFIED", "Verified"
+    FAILED = "FAILED", "Failed"
+    ACTIVATED = "ACTIVATED", "Activated"

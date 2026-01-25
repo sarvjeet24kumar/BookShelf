@@ -1,11 +1,23 @@
 from rest_framework import serializers
-from django.contrib.auth import authenticate
-from accounts.models import User
+from rest_framework.exceptions import AuthenticationFailed
+from django.contrib.auth import authenticate, get_user_model
 from common.validators import validate_password
-from common.constants import MIN_PASSWORD_LENGTH
+from accounts.constants import MIN_PASSWORD_LENGTH
+from common.validators import username_validator
+from django.core.exceptions import ValidationError as DjangoValidationError
+from accounts.services import email_verification_service
+from common.enums import UserRole
+
+User = get_user_model()
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SignupSerializer(serializers.ModelSerializer):
+    """
+    Serializer for user signup.
+    """
 
     password_confirm = serializers.CharField(
         write_only=True, min_length=MIN_PASSWORD_LENGTH
@@ -23,61 +35,71 @@ class SignupSerializer(serializers.ModelSerializer):
             "phone_no",
         )
         extra_kwargs = {
-            "email": {"required": True},
-            "username": {"required": True},
-            "phone_no": {"required": True},
-            "first_name": {"required": True},
-            "last_name": {"required": True},
             "password": {"write_only": True},
+            "username": {"validators": []},
+            "email": {"validators": []},
         }
 
     def validate_username(self, value):
-        return value.strip()
+        """Validate username is not already taken."""
+        username = value.lower()
+        if User.all_objects.filter(username=username).exists():
+            raise serializers.ValidationError(
+                "user with this username already exists."
+            )
+        return username
+
+    def validate_email(self, value):
+        return value.lower()
 
     def validate_password(self, value):
-        validate_password(value)
-        return value
-
-    def validate_first_name(self, value):
-        return value.strip()
-
-    def validate_last_name(self, value):
+        validate_password(value.strip())
         return value.strip()
 
     def validate(self, attrs):
         if attrs["password"] != attrs["password_confirm"]:
             raise serializers.ValidationError("Passwords don't match.")
+        attrs.pop("password_confirm")
         return attrs
 
     def create(self, validated_data):
-        validated_data.pop("password_confirm")
-        password = validated_data.pop("password")
-        user = User.objects.create_user(password=password, **validated_data)
-        return user
+        return User.objects.create_user(**validated_data)
+
+
+class VerifyEmailSerializer(serializers.Serializer):
+    """Serializer for email verification with OTP."""
+
+    email = serializers.EmailField()
+    otp = serializers.CharField(min_length=6, max_length=6)
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+    def validate_otp(self, value):
+        return value.strip()
 
 
 class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
+    """Serializer for user login."""
+
+    email = serializers.EmailField(required=False)
+    username = serializers.CharField(required=False)
     password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        username = attrs.get("username")
-        password = attrs.get("password")
+        email = attrs.get("email", "").lower()
+        username = attrs.get("username", "").lower()
+        password = attrs.get("password", "").strip()
 
-        if not username or not password:
-            raise serializers.ValidationError("username and password are required.")
+        if email and username:
+            raise serializers.ValidationError("Provide either email or username, not both.")
+        if not email and not username:
+            raise serializers.ValidationError("Email or username is required.")
+        if not password:
+            raise serializers.ValidationError("Password is required.")
 
-        user = authenticate(
-            request=self.context.get("request"),
-            username=username,
-            password=password,
-        )
-
-        if not user:
-            raise serializers.ValidationError({"error": "Invalid credentials."})
-
-        if user.deleted_at:
-            raise serializers.ValidationError({"error": "This account is inactive."})
-
-        attrs["user"] = user
+        attrs["email"] = email if email else None
+        attrs["username"] = username if username else None
+        attrs["password"] = password
         return attrs
+

@@ -2,10 +2,15 @@ import os
 import environ
 from pathlib import Path
 from datetime import timedelta
+from common.constants import (
+    THROTTLE_RATE_ANON,
+    THROTTLE_RATE_USER,
+    THROTTLE_RATE_IP,
+    THROTTLE_RATE_AUTH,
+)
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-# Settings are in config/settings/, so we need to go up 3 levels to reach project root
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 env = environ.Env(
@@ -34,6 +39,8 @@ INSTALLED_APPS = [
     "accounts",
     "books",
     "common",
+    "tenants",
+    "payments",
 ]
 
 MIDDLEWARE = [
@@ -41,6 +48,7 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
+    "tenants.middleware.TenantMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -95,6 +103,11 @@ USE_TZ = True
 
 AUTH_USER_MODEL = "accounts.User"
 
+# Authentication backends for login
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+]
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
@@ -106,7 +119,7 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "tenants.authentication.TenantAwareJWTAuthentication",
     ],
     "EXCEPTION_HANDLER": "common.exceptions.custom_exception_handler",
     "DEFAULT_RENDERER_CLASSES": (
@@ -118,8 +131,10 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/hour",
-        "user": "1000/hour",
+        "anon": THROTTLE_RATE_ANON,
+        "user": THROTTLE_RATE_USER,
+        "ip_throttle": THROTTLE_RATE_IP,
+        "auth_throttle": THROTTLE_RATE_AUTH,
     },
 }
 
@@ -133,4 +148,13 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
+SITE_URL = env("SITE_URL", default="http://127.0.0.1:8000")
+
 from config.logging import LOGGING
+
+
+# Razorpay Settings
+RAZORPAY_KEY_ID = env("RAZORPAY_KEY_ID", default="")
+RAZORPAY_KEY_SECRET = env("RAZORPAY_KEY_SECRET", default="")
+RAZORPAY_WEBHOOK_SECRET = env("RAZORPAY_WEBHOOK_SECRET", default="")
+PREMIUM_PRICE_PAISE = 99900  # ₹999
