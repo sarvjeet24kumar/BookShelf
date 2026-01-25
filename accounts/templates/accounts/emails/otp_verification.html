@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email</title>
+</head>
+
+<body
+    style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+        style="background-color: #f4f4f4;">
+        <tr>
+            <td style="padding: 40px 0;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600"
+                    style="margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <tr>
+                        <td
+                            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center; border-radius: 8px 8px 0 0;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;"> BookShelf</h1>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <h2 style="margin: 0 0 20px; color: #333333; font-size: 24px; font-weight: 600;">Security
+                                Verification</h2>
+
+                            <p style="margin: 0 0 20px; color: #666666; font-size: 16px; line-height: 1.6;">
+                                Hello! A verification code has been requested for your BookShelf account. Use the code
+                                below to proceed:
+                            </p>
+
+                            <!-- OTP Box -->
+                            <div
+                                style="background-color: #f8f9fa; border: 2px dashed #667eea; border-radius: 8px; padding: 30px; text-align: center; margin: 30px 0;">
+                                <p
+                                    style="margin: 0 0 10px; color: #666666; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
+                                    Your Verification Code</p>
+                                <p
+                                    style="margin: 0; color: #333333; font-size: 36px; font-weight: 700; letter-spacing: 8px;">
+                                    {{ otp }}</p>
+                            </div>
+
+                            <p style="margin: 0 0 20px; color: #666666; font-size: 14px; line-height: 1.6;">
+                                This code will expire in <strong>{{ expiry_minutes }} minutes</strong>.
+                            </p>
+
+                            <p style="margin: 0; color: #999999; font-size: 14px; line-height: 1.6;">
+                                If you didn't request this code, you can safely ignore this email. Someone might have
+                                entered your email address by mistake.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td
+                            style="background-color: #f8f9fa; padding: 30px; text-align: center; border-radius: 0 0 8px 8px;">
+                            <p style="margin: 0 0 10px; color: #999999; font-size: 14px;">
+                                Need help? Contact us at <a href="mailto:support@bookshelf.com"
+                                    style="color: #667eea; text-decoration: none;">support@bookshelf.com</a>
+                            </p>
+                            <p style="margin: 0; color: #cccccc; font-size: 12px;">
+                                © 2026 BookShelf. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+
+</html>
