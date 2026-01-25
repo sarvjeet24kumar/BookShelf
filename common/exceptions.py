@@ -2,6 +2,9 @@ import logging
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
 from rest_framework.views import exception_handler
+from rest_framework.response import Response
+from rest_framework import status
+from django.db import IntegrityError
 from rest_framework.exceptions import (
     APIException,
     AuthenticationFailed,
@@ -13,86 +16,130 @@ from rest_framework.exceptions import (
     Throttled,
     ValidationError,
 )
+from django.http import JsonResponse
+from django.shortcuts import render
+
 
 logger = logging.getLogger(__name__)
 
 
 def custom_exception_handler(exc, context):
     """
-    Custom exception handler for DRF that:
-    - Logs all unexpected exceptions
-    - Formats all error responses consistently
-    - Handles all common DRF and Django exceptions
+    Custom exception handler that provides consistent error responses.
     """
-    view = context.get("view", None)
+    view = context.get("view")
+    request = context.get("request")
     view_name = view.__class__.__name__ if view else "Unknown"
 
     response = exception_handler(exc, context)
 
-    if not isinstance(
-        exc,
-        (
-            ValidationError,
-            PermissionDenied,
-            NotAuthenticated,
-            AuthenticationFailed,
-            NotFound,
-            Http404,
-            Throttled,
-        ),
-    ):
+    if isinstance(exc, ObjectDoesNotExist):
+        exc = NotFound()
+        
+
+    if response is None or response.status_code >= 500:
         logger.exception(
-            "Exception in %s: %s",
+            "Unhandled exception in %s | path=%s | user=%s",
             view_name,
-            str(exc),
+            getattr(request, "path", None),
+            getattr(request.user, "id", None) if request and request.user.is_authenticated else None,
         )
 
-    if response is not None:
-        error_data = {}
+    if response is None:
+        return Response(
+            {
+                "success": False,
+                "error": {
+                    "code": "SERVER_ERROR",
+                    "message": "Internal server error",
+                }
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
-        if isinstance(exc, ValidationError):
-            # Validation errors (400)
-            error_data = {"errors": response.data}
 
-        elif isinstance(exc, (PermissionDenied, NotAuthenticated, AuthenticationFailed)):
-            # Permission/Auth errors (403/401)
-            detail = response.data.get("detail", str(exc))
-            error_data = {"error": detail}
+    error = {
+        "code": response.status_code,
+        "message": None,
+        "details": None,
+    }
 
-        elif isinstance(exc, (NotFound, Http404)):
-            # Not found errors (404)
-            detail = response.data.get("detail", "Not found")
-            error_data = {"error": detail}
+    if isinstance(exc, ValidationError):
+        error["code"] = "VALIDATION_ERROR"
+        error["message"] = "Invalid input"
+        error["details"] = response.data
 
-        elif isinstance(exc, Throttled):
-            # Rate limiting errors (429)
-            detail = response.data.get("detail", "Request was throttled")
-            error_data = {
-                "error": detail,
-                "available_in": exc.wait if hasattr(exc, "wait") else None,
-            }
+    elif isinstance(exc, (NotAuthenticated, AuthenticationFailed)):
+        error["code"] = "AUTHENTICATION_FAILED"
+        error["message"] = response.data.get("detail", "Authentication failed")
 
-        elif isinstance(exc, ParseError):
-            # JSON parse errors (400)
-            detail = response.data.get("detail", "Malformed request")
-            error_data = {"error": detail}
+    elif isinstance(exc, PermissionDenied):
+        error["code"] = "PERMISSION_DENIED"
+        error["message"] = response.data.get("detail", "Permission denied")
 
-        elif isinstance(exc, MethodNotAllowed):
-            # Method not allowed (405)
-            detail = response.data.get("detail", f"Method {exc.method} not allowed")
-            error_data = {"error": detail}
+    elif isinstance(exc, (NotFound, Http404)):
+        error["code"] = "NOT_FOUND"
+        error["message"] = response.data.get("detail", "Resource not found")
 
-        elif isinstance(exc, APIException):
-            # Generic API exceptions
-            detail = response.data.get("detail", str(exc))
-            error_data = {"error": detail}
+    elif isinstance(exc, Throttled):
+        error["code"] = "THROTTLED"
+        error["message"] = response.data.get("detail", "Too many requests")
+        error["details"] = {"retry_after": exc.wait}
 
-        else:
-            # Fallback for any other exception
-            error_data = {"error": response.data}
+    elif isinstance(exc, ParseError):
+        error["code"] = "PARSE_ERROR"
+        error["message"] = response.data.get("detail", "Malformed request")
 
-        response.data = error_data
+    elif isinstance(exc, MethodNotAllowed):
+        error["code"] = "METHOD_NOT_ALLOWED"
+        error["message"] = response.data.get("detail")
 
+    elif isinstance(exc, APIException):
+        error["code"] = "API_ERROR"
+        error["message"] = response.data.get("detail", str(exc))
+
+    else:
+        error["code"] = "SERVER_ERROR"
+        error["message"] = "Internal server error"
+
+    response.data = {
+        "success": False,
+        "error": error,
+    }
 
     return response
 
+def handler404(request, exception, template_name="404.html"):
+    """Custom 404 handler - returns JSON for API routes."""
+    
+    if request.path.startswith("/api/"):
+        return JsonResponse(
+            {
+                "success": False,
+                "error": {
+                    "code": "ENDPOINT_NOT_FOUND",
+                    "message": "API endpoint does not exist",
+                }
+            },
+            status=404
+        )
+    return render(request, template_name, status=404)
+
+
+def handler500(request, template_name="500.html"):
+    """Custom 500 handler - returns JSON for API routes."""
+    
+    logger.exception("Internal server error at %s", request.path)
+    
+    if request.path.startswith("/api/"):
+        return JsonResponse(
+            {
+                "success": False,
+                "error": {
+                    "code": "SERVER_ERROR",
+                    "message": "Internal server error",
+                }
+            },
+            status=500
+        )
+    return render(request, template_name, status=500)
