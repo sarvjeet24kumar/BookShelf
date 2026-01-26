@@ -1,15 +1,15 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinLengthValidator
-from common.models import BaseModel
-from common.enums import RequestStatus, Visibility
+from common.models import TenantAwareModel
+from common.enums import RequestStatus
 from common.validators import (
     title_validator,
     author_validator,
     isbn_validator,
     published_year_validator,
 )
-from common.constants import (
+from books.constants import (
     MAX_TITLE_LENGTH,
     MIN_TITLE_LENGTH,
     MAX_AUTHOR_LENGTH,
@@ -17,14 +17,17 @@ from common.constants import (
     MAX_ISBN_LENGTH,
     MIN_ISBN_LENGTH,
     MAX_STATUS_LENGTH,
-    MAX_VISIBILITY_LENGTH,
 )
 
 User = get_user_model()
 
 
-class Book(BaseModel):
-
+class Book(TenantAwareModel):
+    """
+    Book model - extends TenantAwareModel for automatic tenant filtering.
+    Inherits: id, created_at, updated_at, deleted_at, tenant, objects manager
+    """
+    
     title = models.CharField(
         max_length=MAX_TITLE_LENGTH,
         validators=[MinLengthValidator(MIN_TITLE_LENGTH), title_validator],
@@ -40,7 +43,6 @@ class Book(BaseModel):
 
     isbn = models.CharField(
         max_length=MAX_ISBN_LENGTH,
-        unique=True,
         validators=[MinLengthValidator(MIN_ISBN_LENGTH), isbn_validator],
     )
 
@@ -57,15 +59,16 @@ class Book(BaseModel):
         choices=RequestStatus.choices,
         default=RequestStatus.PENDING,
     )
-    visibility = models.CharField(
-        max_length=MAX_VISIBILITY_LENGTH,
-        choices=Visibility.choices,
-        default=Visibility.PUBLIC,
-    )
 
     class Meta:
         db_table = "books"
         ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenant', 'isbn'],
+                name='unique_tenant_isbn'
+            )
+        ]
 
     def __str__(self):
         return f"{self.title} by {self.author}"
