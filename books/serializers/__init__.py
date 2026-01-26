@@ -4,14 +4,18 @@ from .book_serializers import (
     BookCreateSerializer,
     BookUpdateSerializer,
 )
-from .my_book_serializers import MyBookListSerializer, MyBookAddSerializer, MyBookUpdateSerializer
+from .user_book_serializers import (
+    UserBookListSerializer,
+    UserBookAddSerializer,
+    UserBookUpdateSerializer,
+)
 
 __all__ = [
     "GenreSerializer",
     "BookListSerializer",
     "BookCreateSerializer",
     "BookUpdateSerializer",
-    "MyBookListSerializer",
-    "MyBookAddSerializer",
-    "MyBookUpdateSerializer",
+    "UserBookListSerializer",
+    "UserBookAddSerializer",
+    "UserBookUpdateSerializer",
 ]
