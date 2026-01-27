@@ -6,6 +6,8 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +60,6 @@ BookShelf Team
 def cleanup_unverified_users():
     """
     Delete user records that are unverified for more than 24 hours.
-    Runs daily to clean up abandoned signups.
     """
     User = get_user_model()
     cutoff_time = timezone.now() - timedelta(hours=24)
@@ -77,6 +78,31 @@ def cleanup_unverified_users():
         logger.info(f"Cleaned up {count} unverified users older than 24 hours")
     
     return f"Deleted {count} unverified users"
+
+
+@shared_task
+def cleanup_deleted_users_data():
+    """
+    Permanently delete  user data (reading lists/UserBooks) for users 
+    who have been soft-deleted for longer than the retention period.
+    """
+    User = get_user_model()
+    retention_days = getattr(settings, "USER_DATA_RETENTION_DAYS", 30)
+    cutoff_time = timezone.now() - timedelta(days=retention_days)
+    
+    users_to_purge = User.all_objects.filter(
+        deleted_at__lt=cutoff_time
+    )
+    
+    total_purged = 0
+    for user in users_to_purge:
+        purged_count = user.user_books.all().delete()[0]
+        if purged_count > 0:
+            total_purged += purged_count
+            logger.info(f"Purged {purged_count} records for soft-deleted user_id={user.id}")
+            
+    return f"Purged data for {users_to_purge.count()} users, total records deleted: {total_purged}"
+
 
 
 @shared_task(
@@ -123,3 +149,33 @@ BookShelf Team
     email_message.send(fail_silently=False)
 
     logger.info("Password reset email sent: email=%s", email)
+
+
+@shared_task(
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_kwargs={"max_retries": 3, "countdown": 60},  # Wait 1 min before retry
+)
+def seed_tenant_task(self, tenant_id: str, admin_user_id: str):
+    """
+    Asynchronous task to seed a new tenant with initial data.
+    """
+   
+    
+    cache_key = f"tenant_seeded:{tenant_id}"
+    
+    if cache.get(cache_key):
+        logger.info(f"Tenant {tenant_id} already seeded, skipping task.")
+        return f"Tenant {tenant_id} already seeded"
+
+    logger.info(f"Executing Celery task: Seeding tenant {tenant_id}")
+    
+    try:
+        call_command('seed', tenant_id=tenant_id, admin_user_id=admin_user_id)
+        cache.set(cache_key, True, timeout=60 * 60 * 24 * 7)
+        logger.info(f"Successfully seeded tenant {tenant_id}")
+        return f"Successfully seeded tenant {tenant_id}"
+        
+    except Exception as e:
+        logger.error(f"Error seeding tenant {tenant_id}: {str(e)}")
+        raise e
