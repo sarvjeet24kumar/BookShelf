@@ -1,9 +1,24 @@
+from pathlib import Path
+import os
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(exist_ok=True)
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "filters": {
+        "context_filter": {
+            "()": "common.logging_utils.LogContextFilter",
+        },
+    },
     "formatters": {
         "verbose": {
-            "format": "[ %(asctime)s - %(lineno)d - %(name)s - %(levelname)s - %(message)s ]",
+            "format": (
+                "[ %(asctime)s - %(lineno)d - %(name)s - %(levelname)s "
+                "- request_id=%(request_id)s tenant_id=%(tenant_id)s user_id=%(user_id)s "
+                "- %(message)s ]"
+            ),
         },
         "simple": {
             "format": "%(levelname)s %(message)s",
@@ -13,32 +28,55 @@ LOGGING = {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "verbose",
+            "filters": ["context_filter"],
+        },
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_DIR / "app.log",
+            "maxBytes": 5 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "verbose",
+            "filters": ["context_filter"],
+            "level": "INFO",
+        },
+        "error_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_DIR / "error.log",
+            "maxBytes": 5 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "verbose",
+            "filters": ["context_filter"],
+            "level": "ERROR",
         },
     },
     "root": {
-        "handlers": ["console"],
+        "handlers": ["console", "file", "error_file"],
         "level": "INFO",
     },
     "loggers": {
         "django": {
-            "handlers": ["console"],
             "level": "INFO",
-            "propagate": False,
+            "propagate": True,
         },
         "accounts": {
-            "handlers": ["console"],
             "level": "DEBUG",
-            "propagate": False,
+            "propagate": True,
         },
         "books": {
-            "handlers": ["console"],
             "level": "DEBUG",
-            "propagate": False,
+            "propagate": True,
         },
         "common": {
-            "handlers": ["console"],
             "level": "DEBUG",
-            "propagate": False,
+            "propagate": True,
+        },
+        "payments": {
+            "level": "DEBUG",
+            "propagate": True,
+        },
+        "tenants": {
+            "level": "DEBUG",
+            "propagate": True,
         },
     },
 }
