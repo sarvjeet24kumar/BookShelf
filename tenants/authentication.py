@@ -5,7 +5,9 @@ Tenant validation is handled by TenantMiddleware.
 """
 import logging
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import InvalidToken
 from rest_framework.exceptions import AuthenticationFailed
+from django.core.cache import cache
 from tenants.context import set_current_tenant
 
 logger = logging.getLogger(__name__)
@@ -13,17 +15,25 @@ logger = logging.getLogger(__name__)
 
 class TenantAwareJWTAuthentication(JWTAuthentication):
     """
-    JWT authentication with user validation and tenant context setting.
-    
-    Validates:
-    - User is not deleted
-    - User email is verified
-    - User account is active
-    
-    Also sets tenant context for the request thread.
+    Custom JWT authentication that:
+    1. Checks if access token is blacklisted (logout invalidation)
+    2. Sets tenant context from the authenticated user
     """
-    
+
+    def get_validated_token(self, raw_token):
+        """
+        Validate token and check if it's blacklisted.
+        
+        """
+        validated_token = super().get_validated_token(raw_token)
+        jti = validated_token.get("jti")
+        if cache.get(f"blacklisted_access_token:{jti}"):
+            raise InvalidToken("Invalid token", code="token_not_valid")
+
+        return validated_token
+
     def authenticate(self, request):
+        """Authenticate and set tenant context."""
         result = super().authenticate(request)
         
         if result is not None:

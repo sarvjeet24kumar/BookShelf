@@ -1,16 +1,22 @@
 from django.urls import path
 from .views import (
     BookView,
-    MyBookView,
-    MyBookDetailView,
     BookDetailView,
     GenreListView,
+    GenreDetailView,
+    UserBooksView,
+    UserBookDetailView,
 )
 
 urlpatterns = [
     path("books/", BookView.as_view(), name="list"),
     path("books/<uuid:id>/", BookDetailView.as_view(), name="book-detail"),
-    path("my-books/", MyBookView.as_view(), name="my-books"),
-    path("my-books/<uuid:id>/", MyBookDetailView.as_view(), name="my-books-detail"),
+    path("users/<uuid:user_id>/books/", UserBooksView.as_view(), name="user-books"),
+    path(
+        "users/<uuid:user_id>/books/<uuid:book_id>/",
+        UserBookDetailView.as_view(),
+        name="user-book-detail",
+    ),
     path("genres/", GenreListView.as_view(), name="genres"),
+    path("genres/<uuid:id>/", GenreDetailView.as_view(), name="genre-detail"),
 ]

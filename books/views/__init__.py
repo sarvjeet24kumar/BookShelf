@@ -1,11 +1,12 @@
 from .book_views import BookView, BookDetailView
-from .my_book_views import MyBookView, MyBookDetailView
-from .genre_views import GenreListView
+from .user_book_views import UserBooksView, UserBookDetailView
+from .genre_views import GenreListView,GenreDetailView
 
 __all__ = [
     "BookView",
     "BookDetailView",
-    "MyBookView",
-    "MyBookDetailView",
+    "UserBooksView",
+    "UserBookDetailView",
     "GenreListView",
+    "GenreDetailView",
 ]

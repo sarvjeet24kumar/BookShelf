@@ -151,63 +151,63 @@ class VerifyLoginView(APIView):
         )
 
 
-class ResendLoginOTPView(APIView):
-    """
-    Resend login OTP if user didn't receive it.
-    Requires valid credentials (email/username + password).
+# class ResendLoginOTPView(APIView):
+#     """
+#     Resend login OTP if user didn't receive it.
+#     Requires valid credentials (email/username + password).
   
-    """
+#     """
 
-    permission_classes = [AllowAny]
-    throttle_classes = [IPThrottle, AuthThrottle]
+#     permission_classes = [AllowAny]
+#     throttle_classes = [IPThrottle, AuthThrottle]
 
-    def post(self, request):
-        tenant = get_optional_tenant_from_header(request)
+#     def post(self, request):
+#         tenant = get_optional_tenant_from_header(request)
         
 
-        serializer = LoginSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+#         serializer = LoginSerializer(data=request.data)
+#         serializer.is_valid(raise_exception=True)
         
-        email = serializer.validated_data.get("email")
-        username = serializer.validated_data.get("username")
-        password = serializer.validated_data.get("password")
+#         email = serializer.validated_data.get("email")
+#         username = serializer.validated_data.get("username")
+#         password = serializer.validated_data.get("password")
 
 
-        if username:
-            if tenant:
-                user = User.all_objects.filter(username=username, tenant_id=tenant.id).first()
-            else:
-                user = User.all_objects.filter(username=username, tenant_id__isnull=True).first()
-        else:
-            if tenant:
-                user = User.all_objects.filter(email=email, tenant_id=tenant.id).first()
-            else:
-                user = User.all_objects.filter(email=email, tenant_id__isnull=True).first()
+#         if username:
+#             if tenant:
+#                 user = User.all_objects.filter(username=username, tenant_id=tenant.id).first()
+#             else:
+#                 user = User.all_objects.filter(username=username, tenant_id__isnull=True).first()
+#         else:
+#             if tenant:
+#                 user = User.all_objects.filter(email=email, tenant_id=tenant.id).first()
+#             else:
+#                 user = User.all_objects.filter(email=email, tenant_id__isnull=True).first()
 
-        if not user:
-            raise ValidationError("Invalid credentials.")
-
-
-        if user.deleted_at:
-            raise ValidationError("This account has been deleted. Please contact support.")
-        if not user.is_email_verified:
-            raise ValidationError("Please verify your email first.")
-        if not user.is_active:
-            raise ValidationError("This account has been suspended. Please contact support.")
+#         if not user:
+#             raise ValidationError("Invalid credentials.")
 
 
-        authenticated_user = authenticate(
-            request=request, 
-            username=user.username, 
-            password=password
-        )
+#         if user.deleted_at:
+#             raise ValidationError("This account has been deleted. Please contact support.")
+#         if not user.is_email_verified:
+#             raise ValidationError("Please verify your email first.")
+#         if not user.is_active:
+#             raise ValidationError("This account has been suspended. Please contact support.")
+
+
+#         authenticated_user = authenticate(
+#             request=request, 
+#             username=user.username, 
+#             password=password
+#         )
         
-        if not authenticated_user:
-            raise ValidationError("Invalid credentials.")
+#         if not authenticated_user:
+#             raise ValidationError("Invalid credentials.")
 
-        tenant_id = str(user.tenant_id) if user.tenant else None
-        login_otp_service.create(user.username, user.email, tenant_id=tenant_id)
+#         tenant_id = str(user.tenant_id) if user.tenant else None
+#         login_otp_service.create(user.username, user.email, tenant_id=tenant_id)
         
-        logger.info("Login OTP resent: user_id=%s, username=%s", user.id, user.username)
+#         logger.info("Login OTP resent: user_id=%s, username=%s", user.id, user.username)
 
-        return Response({"detail": "New OTP sent to your email."})
+#         return Response({"detail": "New OTP sent to your email."})

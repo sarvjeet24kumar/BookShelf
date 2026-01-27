@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import UserManager
-
+from common.enums import UserRole
+from tenants.context import get_current_tenant
 
 class SoftDeleteManager(models.Manager):
     """
@@ -20,7 +21,6 @@ class TenantAwareManager(SoftDeleteManager):
     """
     
     def get_queryset(self):
-        from tenants.context import get_current_tenant
         
         queryset = super().get_queryset()
         tenant = get_current_tenant()
@@ -38,7 +38,6 @@ class TenantAwareAllObjectsManager(models.Manager):
     """
     
     def get_queryset(self):
-        from tenants.context import get_current_tenant
         
         queryset = super().get_queryset() 
         tenant = get_current_tenant()
@@ -72,9 +71,10 @@ class TenantAwareUserManager(UserManager):
         return self._create_user(username, email, password, **extra_fields)
     
     def create_superuser(self, username, email=None, password=None, **extra_fields):
+        
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
         extra_fields.setdefault('is_email_verified', True)
+        extra_fields.setdefault('role', UserRole.SUPERADMIN)
         return self._create_user(username, email, password, **extra_fields)
-

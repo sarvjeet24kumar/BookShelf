@@ -1,11 +1,12 @@
 from rest_framework import serializers
+from common.serializers.base import BaseModelSerializer
 from django.db import transaction
 from books.models import Book, Genre, BookGenre
-from common.enums import RequestStatus, UserRole, Visibility
+from common.enums import RequestStatus, UserRole
 from django.utils import timezone
 
 
-class BookListSerializer(serializers.ModelSerializer):
+class BookListSerializer(BaseModelSerializer):
     """Serializer for listing books."""
 
     genres = serializers.SerializerMethodField()
@@ -20,9 +21,9 @@ class BookListSerializer(serializers.ModelSerializer):
             "isbn",
             "published_year",
             "request_status",
-            "visibility",
             "created_by",
             "genres",
+            "deleted_at",
             "created_at",
         ]
         read_only_fields = fields
@@ -38,7 +39,7 @@ class BookListSerializer(serializers.ModelSerializer):
         if book.created_by:
             return {
                 "id": str(book.created_by.id),
-                "username": book.created_by.username,
+                # "username": book.created_by.username,
             }
         return None
 
@@ -49,18 +50,10 @@ class BookCreateSerializer(serializers.ModelSerializer):
     genres = serializers.ListField(
         child=serializers.UUIDField(),
         write_only=True,
-        help_text="List of genre UUIDs",
     )
     request_status = serializers.ChoiceField(
         choices=RequestStatus.choices,
         required=False,
-        help_text="Request status (admin only, defaults to APPROVED)",
-    )
-    visibility = serializers.ChoiceField(
-        choices=Visibility.choices,
-        required=False,
-        default=Visibility.PUBLIC,
-        help_text="Visibility (defaults to PUBLIC)",
     )
 
     class Meta:
@@ -70,7 +63,6 @@ class BookCreateSerializer(serializers.ModelSerializer):
             "author",
             "isbn",
             "published_year",
-            "visibility",
             "request_status",
             "genres",
         ]
@@ -105,6 +97,8 @@ class BookCreateSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         user = request.user
         validated_data["created_by"] = user
+        validated_data["tenant"] = user.tenant
+
         if user.role == UserRole.ADMIN:
             if "request_status" not in validated_data:
                 validated_data["request_status"] = RequestStatus.APPROVED
@@ -127,7 +121,6 @@ class BookUpdateSerializer(serializers.ModelSerializer):
         child=serializers.UUIDField(),
         required=False,
         write_only=True,
-        help_text="List of genre UUIDs (replaces existing genres)",
     )
 
     class Meta:
@@ -137,7 +130,7 @@ class BookUpdateSerializer(serializers.ModelSerializer):
             "author",
             "published_year",
             "request_status",
-            "visibility",
+            "deleted_at",
             "genres",
         ]
         extra_kwargs = {
@@ -145,8 +138,26 @@ class BookUpdateSerializer(serializers.ModelSerializer):
             "author": {"required": False},
             "published_year": {"required": False},
             "request_status": {"required": False},
-            "visibility": {"required": False},
+            "deleted_at": {"required": False, "allow_null": True},
         }
+
+    def validate(self, data):
+        """Validate role-based permissions for fields."""
+        request = self.context.get("request")
+        user = request.user if request else None
+
+        is_admin = user and user.role == UserRole.ADMIN
+        if ("request_status" in data or "deleted_at" in data) and not is_admin:
+            error_msg = {}
+            if "request_status" in data:
+                error_msg["request_status"] = (
+                    "Only admins can change the request status."
+                )
+            if "deleted_at" in data:
+                error_msg["deleted_at"] = "Only admins can restore deleted books."
+            raise serializers.ValidationError(error_msg)
+
+        return data
 
     def validate_request_status(self, value):
         """Validate request_status is a valid choice."""
@@ -184,8 +195,9 @@ class BookUpdateSerializer(serializers.ModelSerializer):
         if genre_ids is not None:
             new_genre_ids = set(genre_ids)
             current_genre_ids = set(
-                instance.book_genres.filter(deleted_at__isnull=True)
-                .values_list("genre_id", flat=True)
+                instance.book_genres.filter(deleted_at__isnull=True).values_list(
+                    "genre_id", flat=True
+                )
             )
             to_remove = current_genre_ids - new_genre_ids
             if to_remove:

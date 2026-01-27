@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Upgrade to Premium</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f9f9f9;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: auto;
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-top: 0;
+        }
+
+        .price {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 6px;
+        }
+
+        button {
+            padding: 10px;
+            width: 100%;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+        }
+
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Upgrade to Premium</h1>
+
+        <p>One-time payment for lifetime access.</p>
+
+        <div class="price">₹999</div>
+
+        <ul>
+            <li>Unlimited Books & Genres</li>
+            <li>Priority Support</li>
+            <li>Advanced Search</li>
+            <li>Early Feature Access</li>
+        </ul>
+        <button id="pay-button" onclick="initiatePayment()">Pay Now</button>
+
+        <div id="status-message" class="message"></div>
+    </div>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+        const keyId = "{{ RAZORPAY_KEY_ID|default:'' }}";
+        const userName = "{{ request.user.get_full_name|default:'' }}";
+        const userEmail = "{{ request.user.email|default:'' }}";
+
+        let currentOrderId = null;
+
+        function getTokenFromUrl() {
+            return new URLSearchParams(window.location.search).get('token');
+        }
+        const jwtToken = getTokenFromUrl();
+
+        function showMessage(text) {
+            const msg = document.getElementById('status-message');
+            msg.textContent = text;
+            msg.classList.add('show');
+        }
+
+        function getCookie(name) {
+            const cookies = document.cookie.split(';');
+            for (let c of cookies) {
+                c = c.trim();
+                if (c.startsWith(name + '=')) {
+                    return decodeURIComponent(c.substring(name.length + 1));
+                }
+            }
+            return null;
+        }
+
+        function initiatePayment() {
+            const button = document.getElementById('pay-button');
+            button.disabled = true;
+            showMessage("Creating order...");
+
+            const headers = { 'Content-Type': 'application/json' };
+            if (jwtToken) {
+                headers['Authorization'] = 'Bearer ' + jwtToken;
+            } else {
+                headers['X-CSRFToken'] = getCookie('csrftoken');
+            }
+
+            fetch('/api/v1/payments/create-order/', {
+                method: 'POST',
+                headers: headers,
+                credentials: 'include'
+            })
+                .then(res => res.json())
+                .then(data => {
+                    currentOrderId = data.razorpay_order_id;
+                    openRazorpay(data.razorpay_order_id, data.amount);
+                })
+                .catch(err => {
+                    showMessage("Error creating order");
+                    button.disabled = false;
+                });
+        }
+
+        function openRazorpay(orderId, amount) {
+            const options = {
+                key: keyId,
+                amount: amount,
+                currency: "INR",
+                name: "BookShelf",
+                description: "Premium Subscription",
+                order_id: orderId,
+                handler: verifyPayment,
+                prefill: {
+                    name: userName,
+                    email: userEmail,
+                    contact: "9999999999"
+                }
+            };
+
+            const rzp = new Razorpay(options);
+
+            rzp.on('payment.failed', function () {
+                showMessage("Payment failed");
+                document.getElementById('pay-button').disabled = false;
+            });
+
+            rzp.open();
+        }
+
+        function verifyPayment(response) {
+            showMessage("Verifying payment...");
+
+            fetch('/api/v1/payments/verify/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(response)
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        showMessage("Verification failed");
+                        document.getElementById('pay-button').disabled = false;
+                    } else {
+                        showMessage("Payment successful. Subscription activated.");
+                        document.getElementById('pay-button').textContent = "Done";
+                    }
+                })
+                .catch(() => {
+                    showMessage("Verification error");
+                    document.getElementById('pay-button').disabled = false;
+                });
+        }
+    </script>
+
+</body>
+
+</html>

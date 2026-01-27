@@ -2,13 +2,12 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from common.models import BaseModel
 from common.enums import BookStatus
-from common.constants import MAX_STATUS_LENGTH
+from books.constants import MAX_STATUS_LENGTH
 
 User = get_user_model()
 
 
 class UserBook(BaseModel):
-
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_books")
 
     book = models.ForeignKey(
@@ -22,7 +21,10 @@ class UserBook(BaseModel):
     class Meta:
         db_table = "user_books"
         constraints = [
-            models.UniqueConstraint(fields=["user", "book"], name="unique_user_book")
+            models.UniqueConstraint(
+                fields=["user", "book"],
+                name="unique_user_book"
+            )
         ]
 
     def __str__(self):

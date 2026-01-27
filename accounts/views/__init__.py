@@ -9,52 +9,27 @@ Accounts views package.
 """
 
 
-from accounts.views.registration_views import SignupView
-
-
-from accounts.views.email_verification_views import (
-    VerifyEmailView,
-    ResendOTPView,
-)
-
-
-from accounts.views.authentication_views import (
-    LoginView,
-    VerifyLoginView,
-    ResendLoginOTPView,
-)
-
-
-from accounts.views.logout_view import LogoutView
-
-
-from accounts.views.password_reset_views import (
-    ForgotPasswordView,
-    ResetPasswordView,
-)
-
-
-from accounts.views.user_views import (
+from .registration_views import SignupView
+from .email_verification_views import VerifyEmailView, ResendOTPView
+from .authentication_views import LoginView, VerifyLoginView
+from .logout_view import LogoutView
+from .password_reset_views import ForgotPasswordView, ResetPasswordView
+from .change_password_view import ChangePasswordView
+from .user_views import (
     UserView,
     UserDetailView,
 )
 
 __all__ = [
-
     "SignupView",
-
     "VerifyEmailView",
     "ResendOTPView",
-
     "LoginView",
     "VerifyLoginView",
-    "ResendLoginOTPView",
-
     "LogoutView",
-
     "ForgotPasswordView",
     "ResetPasswordView",
-
+    "ChangePasswordView",
     "UserView",
     "UserDetailView",
 ]

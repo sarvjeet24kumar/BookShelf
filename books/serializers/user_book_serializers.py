@@ -3,8 +3,8 @@ from books.models import Book, UserBook
 from common.enums import BookStatus
 
 
-class MyBookListSerializer(serializers.ModelSerializer):
-    """Serializer for listing user's books (my-books endpoint)."""
+class UserBookListSerializer(serializers.ModelSerializer):
+    """Serializer for listing a user's books (user-books endpoint)."""
 
     genres = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
@@ -28,12 +28,14 @@ class MyBookListSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
     def _get_user_book(self, book):
-        """Helper to get UserBook for current user."""
+        """Helper to get UserBook for current user or target user."""
         if not hasattr(self, "_user_book_cache"):
             self._user_book_cache = {}
         
         if book.id not in self._user_book_cache:
-            user = self.context["request"].user
+            # Use target_user if provided (for Admin viewing other user's library),
+            # otherwise use request.user (for own library)
+            user = self.context.get("target_user", self.context["request"].user)
             self._user_book_cache[book.id] = UserBook.objects.filter(
                 user=user, book=book, deleted_at__isnull=True
             ).first()
@@ -61,28 +63,24 @@ class MyBookListSerializer(serializers.ModelSerializer):
         if book.created_by:
             return {
                 "id": str(book.created_by.id),
-                "username": book.created_by.username,
             }
         return None
 
 
-class MyBookAddSerializer(serializers.Serializer):
-    """Serializer for adding a book to user's library."""
+class UserBookAddSerializer(serializers.Serializer):
+    """Serializer for adding a book to a user's library."""
 
-    book_id = serializers.UUIDField(
-        help_text="UUID of the book to add"
-    )
+    book_id = serializers.UUIDField()
     status = serializers.ChoiceField(
         choices=BookStatus.choices,
         default=BookStatus.TO_READ,
-        help_text="Initial reading status (defaults to TO_READ)",
     )
 
 
-class MyBookUpdateSerializer(serializers.Serializer):
-    """Serializer for updating reading status in user's library."""
+class UserBookUpdateSerializer(serializers.Serializer):
+
+    """Serializer for updating reading status in a user's library."""
 
     status = serializers.ChoiceField(
         choices=BookStatus.choices,
-        help_text="Reading status (TO_READ, READING, COMPLETED)",
     )

@@ -103,3 +103,31 @@ class LoginSerializer(serializers.Serializer):
         attrs["password"] = password
         return attrs
 
+
+class ChangePasswordSerializer(serializers.Serializer):
+    """Serializer for changing password for authenticated users."""
+    
+    current_password = serializers.CharField(write_only=True, required=True)
+    new_password = serializers.CharField(write_only=True, required=True, min_length=MIN_PASSWORD_LENGTH)
+    confirm_password = serializers.CharField(write_only=True, required=True, min_length=MIN_PASSWORD_LENGTH)
+    
+    def validate_new_password(self, value):
+        """Validate new password meets requirements."""
+        validate_password(value.strip())
+        return value.strip()
+    
+    def validate(self, attrs):
+        """Validate passwords match and new password is different from current."""
+        current_password = attrs.get('current_password', '').strip()
+        new_password = attrs.get('new_password', '').strip()
+        confirm_password = attrs.get('confirm_password', '').strip()
+        
+        # Check new password matches confirmation
+        if new_password != confirm_password:
+            raise serializers.ValidationError({"confirm_password": "New passwords don't match."})
+        
+        # Check new password is different from current
+        if current_password == new_password:
+            raise serializers.ValidationError({"new_password": "New password must be different from current password."})
+        
+        return attrs

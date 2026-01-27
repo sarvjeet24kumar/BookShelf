@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from common.serializers.base import BaseModelSerializer
 from django.contrib.auth import get_user_model
 from common.validators import validate_password
 from common.enums import UserRole
@@ -21,9 +22,10 @@ class UserSerializer(serializers.ModelSerializer):
             "tenant",
             "first_name",
             "last_name",
+            "deleted_at",
             "created_at",
         ]
-        read_only_fields = ["id", "created_at"]
+        read_only_fields = ["id", "created_at", "deleted_at"]
         extra_kwargs = {
             "password": {"write_only": True},
             "role": {"required": False},
@@ -46,7 +48,7 @@ class UserSerializer(serializers.ModelSerializer):
         return User.objects.create_user(password=password, **validated_data)
 
 
-class UserDetailSerializer(serializers.ModelSerializer):
+class UserDetailSerializer(BaseModelSerializer):
 
     class Meta:
         model = User
@@ -64,10 +66,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]
-        extra_kwargs = {
-            "password": {"write_only": True},
-            "deleted_at": {"write_only": True},
-        }
+        extra_kwargs = {"password": {"write_only": True}}
 
     def validate_username(self, value):
         value = value.strip().lower()
