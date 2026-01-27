@@ -1,4 +1,5 @@
 from threading import local
+from contextlib import contextmanager
 
 _thread_locals = local()
 
@@ -23,3 +24,16 @@ def clear_current_tenant():
     """
     if hasattr(_thread_locals, 'tenant'):
         del _thread_locals.tenant
+
+
+@contextmanager
+def TenantContext(tenant):
+    """
+    Context manager for temporarily setting tenant context.
+    """
+    previous_tenant = get_current_tenant()
+    try:
+        set_current_tenant(tenant)
+        yield
+    finally:
+        set_current_tenant(previous_tenant)
