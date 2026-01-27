@@ -33,7 +33,6 @@ class SignupView(APIView):
 
         email = serializer.validated_data["email"]
 
-     
         existing_user = User.all_objects.filter(
             email=email, tenant_id=tenant.id
         ).first()
@@ -41,10 +40,12 @@ class SignupView(APIView):
         if existing_user:
             if existing_user.deleted_at:
                 raise ValidationError(
-                    "This email is associated with a deleted account. Contact support."
+                    "An account with this email cannot be created. Please contact support."
                 )
             if existing_user.is_email_verified:
-                raise ValidationError("A user with this email already exists.")
+                raise ValidationError(
+                    "An account with this email cannot be created. Please contact support."
+                )
 
         user = serializer.save(tenant=tenant)
 

@@ -9,7 +9,7 @@ from accounts.serializers.user_serializers import (
     UserSerializer,
     UserDetailSerializer,
 )
-from common.permissions import IsTenantAdmin, IsTenantAdminOrSuperAdmin, IsOwnerOrAdmin
+from common.permissions import IsTenantAdminOrSuperAdmin, IsOwnerOrAdmin
 from common.pagination import CommonPagination
 from common.enums import UserRole
 from accounts.utils.token_utils import blacklist_user_tokens
@@ -59,9 +59,7 @@ class UserView(ListCreateAPIView):
             tenant_id = request.user.tenant_id
 
         if User.all_objects.filter(email=email, tenant_id=tenant_id).exists():
-            raise ValidationError(
-                "A user with this email already exists in this organization."
-            )
+            raise ValidationError("A user with this email already exists.")
 
         user = serializer.save(
             role=role, tenant=tenant, is_email_verified=False, is_active=False
@@ -93,6 +91,15 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         return User.objects.all()
 
+    def get_serializer(self, *args, **kwargs):
+        exclude_fields = []
+
+        if self.request.user.role == UserRole.USER:
+            exclude_fields = ["deleted_at", "is_active"]
+
+        kwargs["exclude_fields"] = exclude_fields
+        return super().get_serializer(*args, **kwargs)
+
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
@@ -100,11 +107,8 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
-        user = (
-            self.get_object()
-        ) 
+        user = self.get_object()
         is_admin = request.user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]
-
 
         if user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN] and not is_admin:
             logger.warning(
@@ -114,8 +118,6 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
             )
             raise PermissionDenied("Cannot update admin users.")
 
-
-
         if "email" in request.data or "role" in request.data:
             logger.warning(
                 "Blocked: Attempt to update immutable fields (email/role): user_id=%s, attempted_by=%s",
@@ -124,23 +126,21 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
             )
             raise PermissionDenied("Email and role cannot be changed.")
 
-
         new_username = request.data.get("username")
         if new_username and new_username.lower() != user.username:
             if User.all_objects.filter(username=new_username.lower()).exists():
                 raise ValidationError({"username": "This username is already taken."})
 
         if not is_admin:
-            restricted_fields = {"is_active"}
+            restricted_fields = {"is_active", "deleted_at"}
             if any(field in request.data for field in restricted_fields):
                 logger.warning(
                     "Blocked: Regular user tried to update restricted fields: user_id=%s",
                     user.id,
                 )
                 raise PermissionDenied(
-                    "You cannot update restricted fields (is_active)."
+                    "You cannot update restricted fields (is_active, deleted_at)."
                 )
-
 
         original_is_active = user.is_active
 
@@ -203,9 +203,5 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
                     user.id,
                     request.user.id,
                 )
-
-            user.user_books.filter(deleted_at__isnull=True).update(
-                deleted_at=user.deleted_at
-            )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
