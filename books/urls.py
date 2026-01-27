@@ -3,6 +3,7 @@ from .views import (
     BookView,
     BookDetailView,
     GenreListView,
+    GenreDetailView,
     UserBooksView,
     UserBookDetailView,
 )
@@ -17,4 +18,5 @@ urlpatterns = [
         name="user-book-detail",
     ),
     path("genres/", GenreListView.as_view(), name="genres"),
+    path("genres/<uuid:id>/", GenreDetailView.as_view(), name="genre-detail"),
 ]
