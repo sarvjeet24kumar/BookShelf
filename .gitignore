@@ -14,3 +14,12 @@ media
 env/
 venv/
 ENV/
+
+
+# Celery Beat schedule files
+celerybeat-schedule
+celerybeat-schedule-shm
+celerybeat-schedule-wal
+celerybeat.pid
+# Redis
+dump.rdb.DS_Store

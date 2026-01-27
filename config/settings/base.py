@@ -12,6 +12,8 @@ from common.constants import (
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(exist_ok=True)
 
 env = environ.Env(
     DEBUG=(bool, False),
@@ -27,6 +29,7 @@ SECRET_KEY = env("SECRET_KEY")
 
 # Application definition
 INSTALLED_APPS = [
+    "silk",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -44,12 +47,15 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "silk.middleware.SilkyMiddleware",
+    "common.middleware.RequestIDMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "tenants.middleware.TenantMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "common.middleware.RequestLogMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "common.middleware.API404Middleware",
@@ -158,3 +164,6 @@ RAZORPAY_KEY_ID = env("RAZORPAY_KEY_ID", default="")
 RAZORPAY_KEY_SECRET = env("RAZORPAY_KEY_SECRET", default="")
 RAZORPAY_WEBHOOK_SECRET = env("RAZORPAY_WEBHOOK_SECRET", default="")
 PREMIUM_PRICE_PAISE = 99900  # ₹999
+
+# User Data Retention
+USER_DATA_RETENTION_DAYS = env.int("USER_DATA_RETENTION_DAYS", default=30)
