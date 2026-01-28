@@ -106,17 +106,13 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def update(self, request, *args, **kwargs):
+        """
+        Update user account.
+        
+        """
         partial = kwargs.pop("partial", False)
         user = self.get_object()
-        is_admin = request.user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]
-
-        if user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN] and not is_admin:
-            logger.warning(
-                "Blocked: Non-admin tried to update admin user: target_id=%s, attempted_by=%s",
-                user.id,
-                request.user.id,
-            )
-            raise PermissionDenied("Cannot update admin users.")
+        is_self = user.id == request.user.id
 
         if "email" in request.data or "role" in request.data:
             logger.warning(
@@ -126,12 +122,21 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
             )
             raise PermissionDenied("Email and role cannot be changed.")
 
+        if request.user.role == UserRole.ADMIN and not is_self:
+            if user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+                logger.warning(
+                    "Blocked: Tenant admin tried to update admin/super admin: target_id=%s, attempted_by=%s",
+                    user.id,
+                    request.user.id,
+                )
+                raise PermissionDenied("Tenant admin cannot update other admin accounts.")
+
         new_username = request.data.get("username")
         if new_username and new_username.lower() != user.username:
             if User.all_objects.filter(username=new_username.lower()).exists():
                 raise ValidationError({"username": "This username is already taken."})
 
-        if not is_admin:
+        if request.user.role == UserRole.USER:
             restricted_fields = {"is_active", "deleted_at"}
             if any(field in request.data for field in restricted_fields):
                 logger.warning(
@@ -148,7 +153,7 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
         serializer.is_valid(raise_exception=True)
         updated_user = serializer.save()
 
-        # If admin suspended user (is_active changed from True to False), blacklist tokens
+        is_admin = request.user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]
         if is_admin and original_is_active and not updated_user.is_active:
             blacklist_user_tokens(updated_user)
             logger.info(
@@ -164,40 +169,42 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def destroy(self, request, *args, **kwargs):
-        user = self.get_object()
-        is_admin = request.user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]
+        """
+        Delete user account.
+    
+        """
+        user = self.get_object()  
         is_self = user.id == request.user.id
-
-        if user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN] and not is_admin:
+        if request.user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN] and is_self:
             logger.warning(
-                "Blocked: Non-admin tried to delete admin user: target_id=%s, attempted_by=%s",
-                user.id,
+                "Blocked: Admin tried to delete self: user_id=%s, role=%s",
                 request.user.id,
+                request.user.role,
             )
-            raise PermissionDenied("Cannot delete admin users.")
+            raise PermissionDenied("Admins cannot delete their own account.")
 
-        if is_admin and is_self:
-            logger.warning(
-                "Blocked: Admin tried to delete self: user_id=%s", request.user.id
-            )
-            raise ValidationError("Admins cannot delete their own account.")
+        if request.user.role == UserRole.ADMIN and not is_self:
+            if user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+                logger.warning(
+                    "Blocked: Tenant admin tried to delete admin/super admin: target_id=%s, target_role=%s, attempted_by=%s",
+                    user.id,
+                    user.role,
+                    request.user.id,
+                )
+                raise PermissionDenied("Tenant admin cannot delete other admin or super admin accounts.")
 
         with transaction.atomic():
             if is_self:
                 user.soft_delete()
                 user.is_active = False
                 user.save(update_fields=["is_active"])
-
                 blacklist_user_tokens(user)
-
                 logger.info(
                     "User self-deleted and tokens blacklisted: user_id=%s", user.id
                 )
             else:
                 user.soft_delete()
-
                 blacklist_user_tokens(user)
-
                 logger.info(
                     "Admin deleted user and blacklisted tokens: user_id=%s, deleted_by=%s",
                     user.id,

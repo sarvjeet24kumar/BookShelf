@@ -14,12 +14,6 @@ logger = logging.getLogger(__name__)
 class LogoutView(APIView):
     """
     Logout endpoint that blacklists both access and refresh tokens.
-
-    Security:
-        - Access token: Blacklisted in Redis with TTL
-        - Refresh token: Blacklisted via SimpleJWT's blacklist app
-        - Prevents token reuse after logout
-        - Complete session invalidation
     """
 
     permission_classes = [IsAuthenticated]
@@ -27,17 +21,14 @@ class LogoutView(APIView):
     def post(self, request):
         refresh_token = request.data.get("refresh")
 
-        # Validate refresh token
         if not refresh_token:
             raise ValidationError({"refresh": "Refresh token is required."})
 
-        # Validate access token in Authorization header
         auth_header = request.headers.get("Authorization", "")
         if not auth_header.startswith("Bearer "):
             raise ValidationError({"authorization": "Access token is required ."})
 
         try:
-            # 1. Blacklist access token in Redis
             raw_access_token = auth_header.split(" ")[1]
 
             try:
@@ -45,7 +36,6 @@ class LogoutView(APIView):
                 jti = access_token.get("jti")
                 exp = access_token.get("exp")
 
-                # Calculate remaining TTL for access token
                 now = datetime.utcnow().timestamp()
                 ttl = int(exp - now)
 
@@ -64,7 +54,6 @@ class LogoutView(APIView):
                     str(e),
                 )
 
-            # 2. Blacklist refresh token using SimpleJWT's blacklist
             try:
                 token = RefreshToken(refresh_token)
                 token.blacklist()

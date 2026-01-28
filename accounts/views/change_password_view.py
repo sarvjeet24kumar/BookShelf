@@ -30,11 +30,9 @@ class ChangePasswordView(APIView):
         
         user = request.user
         
-        # Verify current password
         if not user.check_password(current_password):
             raise ValidationError({"current_password": "Current password is incorrect."})
         
-        # Set new password
         user.set_password(new_password)
         user.save(update_fields=['password', 'updated_at'])
         

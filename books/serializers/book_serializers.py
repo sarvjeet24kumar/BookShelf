@@ -39,7 +39,7 @@ class BookListSerializer(BaseModelSerializer):
         if book.created_by:
             return {
                 "id": str(book.created_by.id),
-                # "username": book.created_by.username,
+   
             }
         return None
 
