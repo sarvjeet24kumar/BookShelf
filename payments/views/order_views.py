@@ -23,34 +23,51 @@ class CreateOrderView(APIView):
 
     """
     authentication_classes = [TenantAwareJWTAuthentication, CsrfExemptSessionAuthentication]
-    permission_classes = [permissions.IsAuthenticated, IsTenantAdmin]
+    permission_classes = [IsTenantAdmin]
 
     def post(self, request):
         tenant = request.user.tenant
         
-        subscription, created = Subscription.objects.get_or_create(tenant=tenant)
+        if not tenant:
+            logger.error(f"User {request.user.id} has no tenant")
+            raise ValidationError("User must belong to a tenant")
+        
+        try:
+            subscription, created = Subscription.objects.get_or_create(tenant=tenant)
+        except Exception as e:
+            logger.exception(f"Failed to get/create subscription for tenant {tenant.id}: {str(e)}")
+            raise ValidationError("Failed to create subscription record")
     
         if subscription.status == SubscriptionStatus.ACTIVE:
+            logger.warning(f"Tenant {tenant.id} already has active subscription")
             raise ValidationError("Tenant already has an active lifetime subscription.")
             
         rp_service = RazorpayService()
         amount = settings.PREMIUM_PRICE_PAISE
         currency = "INR"
         
-        rp_order = rp_service.create_order(amount=amount, currency=currency)
+        try:
+            rp_order = rp_service.create_order(amount=amount, currency=currency)
+            logger.info(f"Razorpay order created: {rp_order['id']} for tenant {tenant.id}")
+        except Exception as e:
+            logger.exception(f"Failed to create Razorpay order for tenant {tenant.id}: {str(e)}")
+            raise ValidationError("Failed to create payment order. Please try again.")
         
 
-        payment = Payment.objects.create(
-            tenant=tenant,
-            subscription=subscription,
-            initiated_by=request.user,
-            razorpay_order_id=rp_order['id'],
-            amount=amount,
-            currency=currency,
-            status=PaymentStatus.CREATED
-        )
-        
-        logger.info(f"Payment initiated: order_id={payment.razorpay_order_id} by user={request.user.id}")
+        try:
+            payment = Payment.objects.create(
+                tenant=tenant,
+                subscription=subscription,
+                initiated_by=request.user,
+                razorpay_order_id=rp_order['id'],
+                amount=amount,
+                currency=currency,
+                status=PaymentStatus.CREATED
+            )
+            logger.info(f"Payment record created: id={payment.id}, order_id={payment.razorpay_order_id}, tenant={tenant.id}, user={request.user.id}")
+        except Exception as e:
+            logger.exception(f"Failed to create Payment record for order {rp_order['id']}: {str(e)}")
+            raise ValidationError("Failed to save payment record. Please try again.")
         
         serializer = PaymentOrderResponseSerializer({
             "razorpay_order_id": payment.razorpay_order_id,

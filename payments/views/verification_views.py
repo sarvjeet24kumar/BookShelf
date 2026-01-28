@@ -54,11 +54,14 @@ class VerifyPaymentView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
     
-        if payment.status == PaymentStatus.ACTIVATED:
+        # Idempotency: Skip if already verified or activated
+        if payment.status in [PaymentStatus.VERIFIED, PaymentStatus.ACTIVATED]:
+            logger.info(f"Payment {razorpay_order_id} already in status: {payment.status}. Skipping.")
             return Response({
                 "message": "Payment already verified and subscription activated",
                 "order_id": razorpay_order_id,
-                "status": payment.status
+                "status": payment.status,
+                "subscription_status": payment.subscription.status
             }, status=status.HTTP_200_OK)
         
       

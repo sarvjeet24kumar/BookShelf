@@ -24,7 +24,7 @@ class CheckoutView(APIView):
 
     """
     authentication_classes = [TenantAwareJWTAuthentication, JWTQueryParamAuthentication, CsrfExemptSessionAuthentication]
-    permission_classes = [permissions.IsAuthenticated, IsTenantAdmin]
+    permission_classes = [IsTenantAdmin] 
     renderer_classes = [TemplateHTMLRenderer, JSONRenderer]
 
     def get(self, request):

@@ -128,13 +128,22 @@
                 headers: headers,
                 credentials: 'include'
             })
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) {
+                        return res.json().then(err => {
+                            throw new Error(err.error || err.detail || 'Failed to create order');
+                        });
+                    }
+                    return res.json();
+                })
                 .then(data => {
+                    console.log('Order created:', data.razorpay_order_id);
                     currentOrderId = data.razorpay_order_id;
                     openRazorpay(data.razorpay_order_id, data.amount);
                 })
                 .catch(err => {
-                    showMessage("Error creating order");
+                    console.error('Order creation error:', err);
+                    showMessage(err.message || "Error creating order. Please try again.");
                     button.disabled = false;
                 });
         }

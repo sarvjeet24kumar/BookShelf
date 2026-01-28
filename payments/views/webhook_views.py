@@ -43,14 +43,25 @@ class RazorpayWebhookView(APIView):
         event_type = data.get("event", "")
         event_id = data.get("id")
         
+        if event_type not in ["payment.captured", "payment.failed"]:
+            logger.info(f"Ignoring event type: {event_type}")
+            return Response({"status": "ignored", "event_type": event_type}, status=status.HTTP_200_OK)
+        
+        payment_data = data.get("payload", {}).get("payment", {}).get("entity", {})
+        payment_id = payment_data.get("id")
+        order_id = payment_data.get("order_id")
+        
+        if not payment_id:
+            logger.error(f"Webhook {event_id} missing payment_id")
+            return Response({"error": "Missing payment_id"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not order_id:
+            logger.error(f"Webhook {event_id} missing order_id")
+            return Response({"error": "Missing order_id"}, status=status.HTTP_400_BAD_REQUEST)
+        
         if not event_id:
-            payment_data = data.get("payload", {}).get("payment", {}).get("entity", {})
-            payment_id = payment_data.get("id")
-            if payment_id:
-                event_id = f"evt_manual_{payment_id}"
-            else:
-                event_id = f"evt_unknown_{timezone.now().timestamp()}"
-                logger.warning(f"Webhook missing 'id' field, using generated ID: {event_id}")
+            event_id = f"evt_manual_{payment_id}"
+            logger.warning(f"Webhook missing 'id' field, using generated ID: {event_id}")
         
         audit_payload = {
             **data,
@@ -63,10 +74,11 @@ class RazorpayWebhookView(APIView):
         
         webhook_event = None
         try:
+
             webhook_event, created = WebhookEvent.objects.get_or_create(
                 event_id=event_id,
                 defaults={
-                    "event_type": event_type or "unknown",
+                    "event_type": event_type,
                     "payload": audit_payload,
                     "processed": False,
                     "error_message": None
