@@ -9,6 +9,7 @@ from common.throttling import IPThrottle, AuthThrottle
 from accounts.serializers.auth_serializers import VerifyEmailSerializer
 from accounts.services import email_verification_service
 from accounts.utils.tenant_utils import get_tenant_from_header
+from accounts.utils.user_lookup import find_user_with_validation
 
 
 logger = logging.getLogger(__name__)
@@ -24,25 +25,15 @@ class VerifyEmailView(APIView):
     throttle_classes = [IPThrottle, AuthThrottle]
 
     def post(self, request):
+
         tenant = get_tenant_from_header(request)
-        tenant_id = tenant.id
         email = request.data.get("email", "").strip().lower()
         username = request.data.get("username", "").strip().lower()
         otp = request.data.get("otp", "").strip()
 
-        if email and username:
-            raise ValidationError("Provide either email or username, not both.")
-        if not email and not username:
-            raise ValidationError("Email or username is required.")
-        if not otp:
-            raise ValidationError("OTP is required.")
-
-        if username:
-            user = User.all_objects.filter(
-                username=username, tenant_id=tenant_id
-            ).first()
-        else:
-            user = User.all_objects.filter(email=email, tenant_id=tenant_id).first()
+        user = find_user_with_validation(
+            email=email, username=username, tenant=tenant, require_otp=True, otp=otp
+        )
 
         if not user:
             raise ValidationError("No pending signup found.")
@@ -50,7 +41,7 @@ class VerifyEmailView(APIView):
         if user.is_email_verified:
             raise ValidationError("Email already verified. Please login.")
 
-        tenant_id_str = str(tenant_id)
+        tenant_id_str = str(tenant.id)
 
         success, error = email_verification_service.verify(
             user.username, otp, tenant_id=tenant_id_str
@@ -80,22 +71,12 @@ class ResendOTPView(APIView):
     throttle_classes = [IPThrottle, AuthThrottle]
 
     def post(self, request):
+
         tenant = get_tenant_from_header(request)
-        tenant_id = tenant.id
         email = request.data.get("email", "").strip().lower()
         username = request.data.get("username", "").strip().lower()
 
-        if email and username:
-            raise ValidationError("Provide either email or username, not both.")
-        if not email and not username:
-            raise ValidationError("Email or username is required.")
-
-        if username:
-            user = User.all_objects.filter(
-                username=username, tenant_id=tenant_id
-            ).first()
-        else:
-            user = User.all_objects.filter(email=email, tenant_id=tenant_id).first()
+        user = find_user_with_validation(email=email, username=username, tenant=tenant)
 
         if not user:
             return Response(
@@ -106,7 +87,7 @@ class ResendOTPView(APIView):
         if user.is_email_verified:
             raise ValidationError("Email already verified. Please login.")
 
-        tenant_id_str = str(tenant_id)
+        tenant_id_str = str(tenant.id)
 
         email_verification_service.create(
             user.username, user.email, tenant_id=tenant_id_str

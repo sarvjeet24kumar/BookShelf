@@ -8,8 +8,8 @@ from rest_framework.exceptions import ValidationError, AuthenticationFailed
 from common.throttling import IPThrottle, AuthThrottle
 from accounts.serializers.auth_serializers import LoginSerializer
 from accounts.services import login_otp_service
-from accounts.utils.tenant_utils import get_optional_tenant_from_header
-
+from accounts.utils.tenant_utils import get_tenant_from_header
+from accounts.utils.user_lookup import find_user_with_validation,find_user
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -24,9 +24,7 @@ class LoginView(APIView):
     throttle_classes = [IPThrottle, AuthThrottle]
 
     def post(self, request):
-        tenant = get_optional_tenant_from_header(
-            request
-        ) 
+        tenant = get_tenant_from_header(request, required=False) 
 
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -35,25 +33,7 @@ class LoginView(APIView):
         username = serializer.validated_data.get("username")
         password = serializer.validated_data.get("password")
 
-        if username:
-            if tenant:
-                user = User.all_objects.filter(
-                    username=username, tenant_id=tenant.id
-                ).first()
-            else:
-              
-                user = User.all_objects.filter(
-                    username=username, tenant_id__isnull=True
-                ).first()
-        else:
-        
-            if tenant:
-             
-                user = User.all_objects.filter(email=email, tenant_id=tenant.id).first()
-            else:
-                user = User.all_objects.filter(
-                    email=email, tenant_id__isnull=True
-                ).first()
+        user = find_user(email=email, username=username, tenant=tenant)
 
         if not user:
             raise AuthenticationFailed("Invalid credentials.")
@@ -95,36 +75,18 @@ class VerifyLoginView(APIView):
     throttle_classes = [IPThrottle, AuthThrottle]
 
     def post(self, request):
-        tenant = get_optional_tenant_from_header(request)  
+        tenant = get_tenant_from_header(request, required=False)
         email = request.data.get("email", "").strip().lower()
         username = request.data.get("username", "").strip().lower()
         otp = request.data.get("otp", "").strip()
-
-     
-        if email and username:
-            raise ValidationError("Provide either email or username, not both.")
-        if not email and not username:
-            raise ValidationError("Email or username is required.")
-        if not otp:
-            raise ValidationError("OTP is required.")
-
-        if username:
-            if tenant:
-                user = User.all_objects.filter(
-                    username=username, tenant_id=tenant.id
-                ).first()
-            else:
-                user = User.all_objects.filter(
-                    username=username, tenant_id__isnull=True
-                ).first()
-        else:
-            if tenant:
-                user = User.all_objects.filter(email=email, tenant_id=tenant.id).first()
-            else:
-
-                user = User.all_objects.filter(
-                    email=email, tenant_id__isnull=True
-                ).first()
+    
+        user = find_user_with_validation(
+            email=email, 
+            username=username, 
+            tenant=tenant, 
+            require_otp=True, 
+            otp=otp
+        )
 
         if not user:
             raise ValidationError("Invalid credentials or OTP.")
@@ -150,64 +112,3 @@ class VerifyLoginView(APIView):
             }
         )
 
-
-# class ResendLoginOTPView(APIView):
-#     """
-#     Resend login OTP if user didn't receive it.
-#     Requires valid credentials (email/username + password).
-  
-#     """
-
-#     permission_classes = [AllowAny]
-#     throttle_classes = [IPThrottle, AuthThrottle]
-
-#     def post(self, request):
-#         tenant = get_optional_tenant_from_header(request)
-        
-
-#         serializer = LoginSerializer(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-        
-#         email = serializer.validated_data.get("email")
-#         username = serializer.validated_data.get("username")
-#         password = serializer.validated_data.get("password")
-
-
-#         if username:
-#             if tenant:
-#                 user = User.all_objects.filter(username=username, tenant_id=tenant.id).first()
-#             else:
-#                 user = User.all_objects.filter(username=username, tenant_id__isnull=True).first()
-#         else:
-#             if tenant:
-#                 user = User.all_objects.filter(email=email, tenant_id=tenant.id).first()
-#             else:
-#                 user = User.all_objects.filter(email=email, tenant_id__isnull=True).first()
-
-#         if not user:
-#             raise ValidationError("Invalid credentials.")
-
-
-#         if user.deleted_at:
-#             raise ValidationError("This account has been deleted. Please contact support.")
-#         if not user.is_email_verified:
-#             raise ValidationError("Please verify your email first.")
-#         if not user.is_active:
-#             raise ValidationError("This account has been suspended. Please contact support.")
-
-
-#         authenticated_user = authenticate(
-#             request=request, 
-#             username=user.username, 
-#             password=password
-#         )
-        
-#         if not authenticated_user:
-#             raise ValidationError("Invalid credentials.")
-
-#         tenant_id = str(user.tenant_id) if user.tenant else None
-#         login_otp_service.create(user.username, user.email, tenant_id=tenant_id)
-        
-#         logger.info("Login OTP resent: user_id=%s, username=%s", user.id, user.username)
-
-#         return Response({"detail": "New OTP sent to your email."})
