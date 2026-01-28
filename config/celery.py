@@ -23,4 +23,8 @@ app.conf.beat_schedule = {
         "task": "payments.tasks.reconcile_payments_task",
         "schedule": crontab(minute="*/15"),
     },
+    "cleanup-deleted-tenants": {
+        "task": "tenants.tasks.cleanup_deleted_tenants",
+        "schedule": crontab(hour=2, minute=0),
+    },
 }

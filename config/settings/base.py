@@ -29,7 +29,6 @@ SECRET_KEY = env("SECRET_KEY")
 
 # Application definition
 INSTALLED_APPS = [
-    "silk",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -47,7 +46,6 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "silk.middleware.SilkyMiddleware",
     "common.middleware.RequestIDMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -145,6 +143,7 @@ REST_FRAMEWORK = {
 }
 
 
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=env("JWT_ACCESS_TOKEN_MINUTES")),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=env("JWT_REFRESH_TOKEN_DAYS")),
@@ -164,6 +163,5 @@ RAZORPAY_KEY_ID = env("RAZORPAY_KEY_ID", default="")
 RAZORPAY_KEY_SECRET = env("RAZORPAY_KEY_SECRET", default="")
 RAZORPAY_WEBHOOK_SECRET = env("RAZORPAY_WEBHOOK_SECRET", default="")
 PREMIUM_PRICE_PAISE = 99900  # ₹999
-
-# User Data Retention
 USER_DATA_RETENTION_DAYS = env.int("USER_DATA_RETENTION_DAYS", default=30)
+TENANT_DATA_RETENTION_DAYS = env.int("TENANT_DATA_RETENTION_DAYS", default=360)
