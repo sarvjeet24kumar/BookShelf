@@ -1,8 +1,3 @@
-"""
-Custom authentication classes for multi-tenancy support.
-Handles user authentication, validation, and tenant context setting.
-Tenant validation is handled by TenantMiddleware.
-"""
 import logging
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken
@@ -16,14 +11,11 @@ logger = logging.getLogger(__name__)
 class TenantAwareJWTAuthentication(JWTAuthentication):
     """
     Custom JWT authentication that:
-    1. Checks if access token is blacklisted (logout invalidation)
-    2. Sets tenant context from the authenticated user
     """
 
     def get_validated_token(self, raw_token):
         """
         Validate token and check if it's blacklisted.
-        
         """
         validated_token = super().get_validated_token(raw_token)
         jti = validated_token.get("jti")
@@ -74,6 +66,32 @@ class TenantAwareJWTAuthentication(JWTAuthentication):
             
 
             tenant = getattr(user, 'tenant', None)
+            
+            if tenant:
+                tenant.refresh_from_db()
+                
+                if tenant.deleted_at is not None:
+                    logger.warning(
+                        "Blocked API access for deleted tenant: tenant_id=%s, user_id=%s",
+                        tenant.id,
+                        user.id
+                    )
+                    raise AuthenticationFailed(
+                        "Your organization's account has been deleted. "
+                        "Please contact support for assistance."
+                    )
+                
+                if not tenant.is_active:
+                    logger.warning(
+                        "Blocked API access for suspended tenant: tenant_id=%s, user_id=%s",
+                        tenant.id,
+                        user.id
+                    )
+                    raise AuthenticationFailed(
+                        "Your organization's account has been suspended. "
+                        "Please contact support for assistance."
+                    )
+            
             set_current_tenant(tenant)
             
             if tenant:

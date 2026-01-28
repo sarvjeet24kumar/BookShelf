@@ -8,12 +8,7 @@ logger = logging.getLogger(__name__)
 class TenantMiddleware:
     """
     Middleware to set tenant context and validate tenant status.
-    
-    This middleware:
-    1. Sets tenant context from authenticated user
-    2. Validates tenant is active (not suspended/deleted)
-    3. Blocks requests from suspended/deleted tenants
-    4. Clears tenant context after request completes
+
     """
     
     def __init__(self, get_response):
@@ -42,6 +37,15 @@ class TenantMiddleware:
         
 
         if tenant:
+            tenant.refresh_from_db()
+            
+            logger.info(
+                "Tenant check: tenant_id=%s, deleted_at=%s, is_active=%s",
+                tenant.id,
+                tenant.deleted_at,
+                tenant.is_active
+            )
+            
             if tenant.deleted_at is not None:
                 logger.warning(
                     "Blocked request from deleted tenant: tenant_id=%s, user_id=%s, path=%s",
