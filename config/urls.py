@@ -9,9 +9,6 @@ urlpatterns = [
     path("api/v1/payments/", include("payments.urls")),
 ]
 
-urlpatterns += [
-    path("silk/", include("silk.urls", namespace="silk")),
-]
 
 handler404 = "common.exceptions.handler404"
 handler500 = "common.exceptions.handler500"

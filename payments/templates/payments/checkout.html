@@ -151,7 +151,10 @@
                 prefill: {
                     name: userName,
                     email: userEmail,
-                    contact: "9999999999"
+                    contact: "9905592818"
+                },
+                "retry": {
+                    "enabled": false
                 }
             };
 
@@ -175,12 +178,16 @@
             })
                 .then(res => res.json())
                 .then(data => {
+                    const button = document.getElementById('pay-button');
                     if (data.error) {
                         showMessage("Verification failed");
-                        document.getElementById('pay-button').disabled = false;
+                        button.disabled = false;
                     } else {
                         showMessage("Payment successful. Subscription activated.");
-                        document.getElementById('pay-button').textContent = "Done";
+                        button.textContent = "Done";
+                        button.onclick = null;
+                        button.disabled = true;
+                        button.style.opacity = "0.6";
                     }
                 })
                 .catch(() => {
