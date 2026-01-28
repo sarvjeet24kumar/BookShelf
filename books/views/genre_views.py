@@ -13,6 +13,7 @@ from books.serializers import GenreSerializer
 from common.pagination import CommonPagination
 from common.enums import UserRole
 from common.permissions import IsTenantMember, IsTenantAdmin
+from rest_framework.exceptions import NotFound
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +75,6 @@ class GenreListView(APIView):
 class GenreDetailView(APIView):
     """
     Retrieve, update, or delete a genre.
-    Only admins can update/delete.
     """
 
     permission_classes = [IsTenantMember]
@@ -93,9 +93,7 @@ class GenreDetailView(APIView):
         """Retrieve genre details."""
         genre = self.get_object(id)
         if not genre:
-            return Response(
-                {"error": "Genre not found."}, status=status.HTTP_404_NOT_FOUND
-            )
+            raise NotFound("Genre not found.")
         exclude_fields = []
         if request.user.role != UserRole.ADMIN:
             exclude_fields.append("deleted_at")
@@ -113,9 +111,7 @@ class GenreDetailView(APIView):
 
         genre = self.get_object(id)
         if not genre:
-            return Response(
-                {"error": "Genre not found."}, status=status.HTTP_404_NOT_FOUND
-            )
+            raise NotFound("Genre not found.")
 
         serializer = GenreSerializer(
             genre, data=request.data, context={"request": request}, partial=True
@@ -139,11 +135,9 @@ class GenreDetailView(APIView):
 
         genre = self.get_object(id)
         if not genre:
-            return Response(
-                {"error": "Genre not found."}, status=status.HTTP_404_NOT_FOUND
-            )
+            raise NotFound("Genre not found.")
 
-        genre.delete()  # Soft delete via BaseModel
+        genre.delete()
 
         logger.info(
             "Genre deleted: genre_id=%s, name=%s, deleted_by=%s",

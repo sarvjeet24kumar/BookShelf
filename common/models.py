@@ -33,13 +33,19 @@ class BaseModel(models.Model):
     def soft_delete(self):
         """Soft delete this record by setting deleted_at."""
         self.deleted_at = timezone.now()
-        self.is_active = False
-        self.save(update_fields=["deleted_at", "updated_at", "is_active"])
+        update_fields = ["deleted_at", "updated_at"]
+        if hasattr(self, "is_active"):
+            self.is_active = False
+            update_fields.append("is_active")
+
+        self.save(update_fields=update_fields)
 
     def restore(self):
         """Restore a soft-deleted record by clearing deleted_at."""
         self.deleted_at = None
-        self.save(update_fields=["deleted_at", "updated_at"])
+        if hasattr(self, "is_active"):
+            self.is_active = True
+        self.save(update_fields=["deleted_at", "updated_at", "is_active"])
 
     @property
     def is_deleted(self):
@@ -51,14 +57,6 @@ class TenantAwareModel(BaseModel):
     """
     Abstract model for tenant-scoped models.
     Extends BaseModel with tenant FK and auto filtering.
-
-    Managers:
-        objects-  Default, auto-filters by tenant + excludes soft-deleted
-        all_objects - Includes all records (for admin/restore operations)
-
-    Models extending this will:
-    - Have tenant FK automatically
-    - Use TenantAwareManager (auto-filters by tenant + soft delete)
     """
 
     tenant = models.ForeignKey(
