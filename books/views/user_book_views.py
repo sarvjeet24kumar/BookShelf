@@ -2,7 +2,7 @@ import logging
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.exceptions import NotFound, ValidationError, PermissionDenied
+from rest_framework.exceptions import NotFound, ValidationError
 from django.contrib.auth import get_user_model
 from books.models import Book, UserBook
 from books.serializers import (
@@ -12,6 +12,7 @@ from books.serializers import (
 )
 from books.filters import MyBookFilter
 from books.constants import FREE_PLAN_BOOK_LIMIT
+from books.mixins import UserLibraryPermissionMixin
 from common.pagination import CommonPagination
 from common.enums import BookStatus, RequestStatus, UserRole, SubscriptionPlan
 from common.permissions import IsTenantMember
@@ -21,40 +22,14 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
-class UserBooksView(APIView):
+class UserBooksView(UserLibraryPermissionMixin, APIView):
     """
     List user's books and add books to library.
     """
 
     permission_classes = [IsTenantMember]
 
-    def check_permission(self, request, user_id):
-        """
-        Check if request.user has permission to access target user's library.
-        Returns target_user if authorized, raises exception otherwise.
-        """
-        if request.user.tenant is None and request.user.role == UserRole.SUPER_ADMIN:
-            raise PermissionDenied("Super Admin cannot access user libraries.")
 
-        if request.user.role == UserRole.ADMIN and request.user.tenant is not None:
-            try:
-                target_user = User.objects.get(id=user_id)
-            except User.DoesNotExist:
-                raise NotFound("User not found.")
-
-            if target_user.deleted_at is not None:
-                raise NotFound("User not found.")
-
-            if target_user.tenant != request.user.tenant:
-                raise NotFound("User not found.")
-
-            return target_user
-
-        if request.user.role == UserRole.USER:
-            if str(request.user.id) != str(user_id):
-                raise PermissionDenied("You can only access your own library.")
-            return request.user
-        raise PermissionDenied("Access denied.")
 
     def get(self, request, user_id):
         """List all books in a user's library."""
@@ -153,41 +128,14 @@ class UserBooksView(APIView):
         )
 
 
-class UserBookDetailView(APIView):
+class UserBookDetailView(UserLibraryPermissionMixin, APIView):
     """
     Retrieve, update, or delete a book from user's library.
     """
 
     permission_classes = [IsTenantMember]
 
-    def check_permission(self, request, user_id):
-        """
-        Check if request.user has permission to access target user's library.
-        Returns target_user if authorized, raises exception otherwise.
-        """
-        if request.user.tenant is None and request.user.role == UserRole.SUPER_ADMIN:
-            raise PermissionDenied("Super Admin cannot access user libraries.")
 
-        if request.user.role == UserRole.ADMIN and request.user.tenant is not None:
-            try:
-                target_user = User.objects.get(id=user_id)
-            except User.DoesNotExist:
-                raise NotFound("User not found.")
-
-            if target_user.deleted_at is not None:
-                raise NotFound("User not found.")
-
-            if target_user.tenant != request.user.tenant:
-                raise NotFound("User not found.")
-
-            return target_user
-
-        if request.user.role == UserRole.USER:
-            if str(request.user.id) != str(user_id):
-                raise PermissionDenied("You can only access your own library.")
-            return request.user
-
-        raise PermissionDenied("Access denied.")
 
     def get_object(self, request, user_id, book_id):
         """Get user's book by ID or raise NotFound exception."""
