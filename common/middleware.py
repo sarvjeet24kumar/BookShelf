@@ -6,10 +6,8 @@ from django.urls.exceptions import Resolver404
 from common.logging_utils import (
     generate_request_id,
     set_request_id,
-    get_request_id,
     set_tenant_id,
     set_user_id,
-    clear_context,
 )
 from tenants.context import get_current_tenant
 
