@@ -16,12 +16,6 @@ def is_tenant_seeded(tenant_id):
     return cache.get(cache_key, False)
 
 
-def mark_tenant_as_seeded(tenant_id):
-    """Mark tenant as seeded to prevent duplicate seeding."""
-    cache_key = f"tenant_seeded:{tenant_id}"
-    cache.set(cache_key, True, timeout=60 * 60 * 24 * 7)
-
-
 @receiver(post_save, sender=User)
 def auto_seed_tenant_on_first_admin(sender, instance, created, **kwargs):
     """

@@ -8,6 +8,15 @@ from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.core.cache import cache
+from common.constants import (
+    CELERY_MAX_RETRIES,
+    CELERY_COUNTDOWN_SHORT,
+    CELERY_COUNTDOWN_LONG,
+    TENANT_SEED_CACHE_TTL,
+    DEFAULT_OTP_EXPIRY_MINUTES,
+    DEFAULT_USER_DATA_RETENTION_DAYS,
+    DEFAULT_UNVERIFIED_USER_CLEANUP_HOURS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -15,13 +24,13 @@ logger = logging.getLogger(__name__)
 @shared_task(
     bind=True,
     autoretry_for=(Exception,),
-    retry_kwargs={"max_retries": 3, "countdown": 10},
+    retry_kwargs={"max_retries": CELERY_MAX_RETRIES, "countdown": CELERY_COUNTDOWN_SHORT},
 )
 def send_otp_email(self, email: str, otp: str):
     """
     Send OTP email for email verification with HTML template.
     """
-    expiry_minutes = getattr(settings, "OTP_EXPIRY_MINUTES", 15)
+    expiry_minutes = getattr(settings, "OTP_EXPIRY_MINUTES", DEFAULT_OTP_EXPIRY_MINUTES)
 
     subject = "BookShelf - Security Verification Code"
 
@@ -62,7 +71,7 @@ def cleanup_unverified_users():
     Delete user records that are unverified for more than 24 hours.
     """
     User = get_user_model()
-    cutoff_time = timezone.now() - timedelta(hours=24)
+    cutoff_time = timezone.now() - timedelta(hours=DEFAULT_UNVERIFIED_USER_CLEANUP_HOURS)
     
     # Find unverified users older than 24 hours
     old_unverified_users = User.all_objects.filter(
@@ -87,7 +96,7 @@ def cleanup_deleted_users_data():
     who have been soft-deleted for longer than the retention period.
     """
     User = get_user_model()
-    retention_days = getattr(settings, "USER_DATA_RETENTION_DAYS", 30)
+    retention_days = getattr(settings, "USER_DATA_RETENTION_DAYS", DEFAULT_USER_DATA_RETENTION_DAYS)
     cutoff_time = timezone.now() - timedelta(days=retention_days)
     
     users_to_purge = User.all_objects.filter(
@@ -108,7 +117,7 @@ def cleanup_deleted_users_data():
 @shared_task(
     bind=True,
     autoretry_for=(Exception,),
-    retry_kwargs={"max_retries": 3, "countdown": 10},
+    retry_kwargs={"max_retries": CELERY_MAX_RETRIES, "countdown": CELERY_COUNTDOWN_SHORT},
 )
 def send_password_reset_email(self, email: str, token: str):
     """
@@ -124,7 +133,7 @@ Hi,
 Please use the link below to reset your password:
 {reset_url}
 
-This link will expire in {getattr(settings, "OTP_EXPIRY_MINUTES", 15)} minutes.
+This link will expire in {getattr(settings, "OTP_EXPIRY_MINUTES", DEFAULT_OTP_EXPIRY_MINUTES)} minutes.
 
 If you did not request this, please ignore this email.
 
@@ -135,7 +144,7 @@ BookShelf Team
         "accounts/emails/password_reset.html",
         {
             "reset_url": reset_url,
-            "expiry_minutes": getattr(settings, "OTP_EXPIRY_MINUTES", 15),
+            "expiry_minutes": getattr(settings, "OTP_EXPIRY_MINUTES", DEFAULT_OTP_EXPIRY_MINUTES),
         },
     )
 
@@ -154,7 +163,7 @@ BookShelf Team
 @shared_task(
     bind=True,
     autoretry_for=(Exception,),
-    retry_kwargs={"max_retries": 3, "countdown": 60},  # Wait 1 min before retry
+    retry_kwargs={"max_retries": CELERY_MAX_RETRIES, "countdown": CELERY_COUNTDOWN_LONG},
 )
 def seed_tenant_task(self, tenant_id: str, admin_user_id: str):
     """
@@ -172,7 +181,7 @@ def seed_tenant_task(self, tenant_id: str, admin_user_id: str):
     
     try:
         call_command('seed', tenant_id=tenant_id, admin_user_id=admin_user_id)
-        cache.set(cache_key, True, timeout=60 * 60 * 24 * 7)
+        cache.set(cache_key, True, timeout=TENANT_SEED_CACHE_TTL)
         logger.info(f"Successfully seeded tenant {tenant_id}")
         return f"Successfully seeded tenant {tenant_id}"
         

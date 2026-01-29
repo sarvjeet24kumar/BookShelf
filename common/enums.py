@@ -38,3 +38,17 @@ class PaymentStatus(models.TextChoices):
     VERIFIED = "VERIFIED", "Verified"
     FAILED = "FAILED", "Failed"
     ACTIVATED = "ACTIVATED", "Activated"
+
+
+class RazorpayOrderStatus(models.TextChoices):
+    CREATED = "created", "Created"
+    ATTEMPTED = "attempted", "Attempted"
+    PAID = "paid", "Paid"
+
+
+class RazorpayPaymentStatus(models.TextChoices):
+    CREATED = "created", "Created"
+    AUTHORIZED = "authorized", "Authorized"
+    CAPTURED = "captured", "Captured"
+    REFUNDED = "refunded", "Refunded"
+    FAILED = "failed", "Failed"

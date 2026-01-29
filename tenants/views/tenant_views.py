@@ -2,8 +2,9 @@ import logging
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.exceptions import NotFound
-from common.permissions import IsSuperAdmin
+from rest_framework.exceptions import NotFound, PermissionDenied
+from common.permissions import IsSuperAdmin, IsTenantAdminOrSuperAdmin
+from common.enums import UserRole
 from tenants.models import Tenant
 from tenants.serializers.tenant_serializers import (
     TenantSerializer,
@@ -18,19 +19,26 @@ logger = logging.getLogger(__name__)
 class TenantListCreateView(APIView):
     """
     List all tenants or create a new tenant.
+
     """
 
-    permission_classes = [IsSuperAdmin]
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [IsSuperAdmin()]
+        return [IsTenantAdminOrSuperAdmin()]
 
     def get(self, request):
-        """List all tenants."""
-        tenants = Tenant.all_objects.all().order_by("-created_at")
-        serializer = TenantSerializer(tenants, many=True)
+        user = request.user
 
+        if user.role == UserRole.SUPER_ADMIN and user.tenant is None:
+            tenants = Tenant.all_objects.all().order_by("-created_at")
+        else:
+            tenants = Tenant.all_objects.filter(id=user.tenant_id)
+
+        serializer = TenantSerializer(tenants, many=True)
         return Response({"count": tenants.count(), "results": serializer.data})
 
     def post(self, request):
-        """Create a new tenant."""
         serializer = TenantCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -46,23 +54,36 @@ class TenantListCreateView(APIView):
 class TenantDetailView(APIView):
     """
     Retrieve, update, or delete a tenant.
+
     """
 
-    permission_classes = [IsSuperAdmin]
+    def get_permissions(self):
+        if self.request.method in ["PATCH", "DELETE"]:
+            return [IsSuperAdmin()]
+        return [IsTenantAdminOrSuperAdmin()]
 
-    def get_object(self, id):
+    def get_object(self, request, id):
+        user = request.user
+
         try:
-            return Tenant.all_objects.get(id=id)
+            tenant = Tenant.all_objects.get(id=id)
         except Tenant.DoesNotExist:
             raise NotFound("Tenant not found.")
 
+        # Tenant Admin can only access their own tenant
+        if user.role == UserRole.ADMIN and user.tenant is not None:
+            if tenant.id != user.tenant_id:
+                raise PermissionDenied("You can only access your own tenant.")
+
+        return tenant
+
     def get(self, request, id):
-        tenant = self.get_object(id)
+        tenant = self.get_object(request, id)
         serializer = TenantDetailSerializer(tenant)
         return Response(serializer.data)
 
     def patch(self, request, id):
-        tenant = self.get_object(id)
+        tenant = self.get_object(request, id)
         serializer = TenantUpdateSerializer(tenant, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -74,7 +95,7 @@ class TenantDetailView(APIView):
         return Response(TenantDetailSerializer(tenant).data)
 
     def delete(self, request, id):
-        tenant = self.get_object(id)
+        tenant = self.get_object(request, id)
         tenant.soft_delete()
 
         logger.info(

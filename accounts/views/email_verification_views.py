@@ -6,7 +6,6 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework.exceptions import ValidationError
 from common.throttling import IPThrottle, AuthThrottle
-from accounts.serializers.auth_serializers import VerifyEmailSerializer
 from accounts.services import email_verification_service
 from accounts.utils.tenant_utils import get_tenant_from_header
 from accounts.utils.user_lookup import find_user_with_validation

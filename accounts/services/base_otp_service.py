@@ -4,6 +4,7 @@ from django.core.cache import cache
 from django.conf import settings
 from accounts.services.otp_generator import hash_otp
 from accounts.tasks import send_otp_email
+from common.constants import DEFAULT_OTP_EXPIRY_MINUTES
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,7 @@ class BaseOTPService(ABC):
         self.prefix = prefix
 
     def get_expiry(self):
-        return getattr(settings, "OTP_EXPIRY_MINUTES", 5) * 60
+        return getattr(settings, "OTP_EXPIRY_MINUTES", DEFAULT_OTP_EXPIRY_MINUTES) * 60
 
     def build_cache_key(self, tenant_id, identifier):
         if tenant_id:

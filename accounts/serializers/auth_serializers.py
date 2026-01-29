@@ -66,19 +66,6 @@ class SignupSerializer(serializers.ModelSerializer):
         return User.objects.create_user(**validated_data)
 
 
-class VerifyEmailSerializer(serializers.Serializer):
-    """Serializer for email verification with OTP."""
-
-    email = serializers.EmailField()
-    otp = serializers.CharField(min_length=6, max_length=6)
-
-    def validate_email(self, value):
-        return value.strip().lower()
-
-    def validate_otp(self, value):
-        return value.strip()
-
-
 class LoginSerializer(serializers.Serializer):
     """Serializer for user login."""
 

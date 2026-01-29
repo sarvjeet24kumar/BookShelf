@@ -4,13 +4,14 @@ from django.db import transaction
 from django.utils import timezone
 from .models import Payment, Subscription, WebhookEvent
 from .services.razorpay_service import RazorpayService
-from common.enums import PaymentStatus, SubscriptionStatus
+from common.enums import PaymentStatus, RazorpayOrderStatus, RazorpayPaymentStatus
 from tenants.context import TenantContext
+from common.constants import CELERY_MAX_RETRIES, CELERY_COUNTDOWN_LONG
 
 logger = logging.getLogger(__name__)
 
 
-@shared_task(bind=True, max_retries=3)
+@shared_task(bind=True, max_retries=CELERY_MAX_RETRIES)
 def process_webhook_task(self, event_id):
     """
     Asynchronously processes a Razorpay webhook event.
@@ -69,7 +70,7 @@ def process_webhook_task(self, event_id):
         logger.exception(f"Error processing webhook task {event_id}: {str(e)}")
         webhook_event.error_message = str(e)
         webhook_event.save(update_fields=["error_message", "updated_at"])
-        raise self.retry(exc=e, countdown=60)
+        raise self.retry(exc=e, countdown=CELERY_COUNTDOWN_LONG)
 
 
 def _handle_captured(order_id, payment_id):
@@ -131,7 +132,7 @@ def reconcile_payments_task():
                 order_data = rp_service.client.order.fetch(payment.razorpay_order_id)
                 rp_status = order_data.get("status")
 
-                if rp_status == "paid":
+                if rp_status == RazorpayOrderStatus.PAID:
                     with transaction.atomic():
                         payment.status = PaymentStatus.PAID
                         payment.save(update_fields=["status", "updated_at"])
@@ -139,7 +140,7 @@ def reconcile_payments_task():
                             payment.razorpay_order_id
                         )
                         for rp_payment in rp_payments.get("items", []):
-                            if rp_payment.get("status") == "captured":
+                            if rp_payment.get("status") == RazorpayPaymentStatus.CAPTURED:
                                 _handle_captured(
                                     payment.razorpay_order_id, rp_payment.get("id")
                                 )
@@ -147,7 +148,7 @@ def reconcile_payments_task():
                                 break
 
                 elif (
-                    rp_status == "attempted"
+                    rp_status == RazorpayOrderStatus.ATTEMPTED
                     and payment.created_at
                     < timezone.now() - timezone.timedelta(hours=24)
                 ):

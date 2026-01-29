@@ -21,11 +21,18 @@ env = environ.Env(
     SECRET_KEY=(str, ""),
     JWT_ACCESS_TOKEN_MINUTES=(int, 60),
     JWT_REFRESH_TOKEN_DAYS=(int, 1),
+    OTP_EXPIRY_MINUTES=(int, 15),
+    USER_DATA_RETENTION_DAYS=(int, 30),
+    UNVERIFIED_USER_CLEANUP_HOURS=(int, 24),
 )
 environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 SECRET_KEY = env("SECRET_KEY")
 
+# Business Configuration (from .env)
+OTP_EXPIRY_MINUTES = env("OTP_EXPIRY_MINUTES")
+USER_DATA_RETENTION_DAYS = env("USER_DATA_RETENTION_DAYS")
+UNVERIFIED_USER_CLEANUP_HOURS = env("UNVERIFIED_USER_CLEANUP_HOURS")
 
 # Application definition
 INSTALLED_APPS = [
