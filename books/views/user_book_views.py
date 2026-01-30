@@ -84,7 +84,7 @@ class UserBooksView(UserLibraryPermissionMixin, APIView):
             if user_book.deleted_at:
                 if target_user.tenant.subscription_plan == SubscriptionPlan.FREE:
                     current_count = UserBook.objects.filter(user=target_user).count()
-                    if current_count > FREE_PLAN_BOOK_LIMIT:
+                    if current_count >= FREE_PLAN_BOOK_LIMIT:
                         raise ValidationError(
                             f"Free plan limit reached ({FREE_PLAN_BOOK_LIMIT} books). "
                             "Upgrade to Premium to add more books!"
@@ -104,7 +104,7 @@ class UserBooksView(UserLibraryPermissionMixin, APIView):
 
         if target_user.tenant.subscription_plan == SubscriptionPlan.FREE:
             current_count = UserBook.objects.filter(user=target_user).count()
-            if current_count > FREE_PLAN_BOOK_LIMIT:
+            if current_count >= FREE_PLAN_BOOK_LIMIT:
                 raise ValidationError(
                     f"Free plan limit reached ({FREE_PLAN_BOOK_LIMIT} books). "
                     "Upgrade to Premium for unlimited books!"
