@@ -1,6 +1,6 @@
 import logging
 from rest_framework.exceptions import AuthenticationFailed
-from tenants.context import set_current_tenant, clear_current_tenant
+from tenants.context import  clear_current_tenant
 
 logger = logging.getLogger(__name__)
 
