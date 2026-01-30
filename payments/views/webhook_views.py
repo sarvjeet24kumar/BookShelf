@@ -5,7 +5,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, permissions
+from rest_framework import status
+from rest_framework.permissions import AllowAny
 
 from payments.models import WebhookEvent
 from payments.services.razorpay_service import RazorpayService
@@ -21,7 +22,7 @@ class RazorpayWebhookView(APIView):
     Handles payment.captured and payment.failed.
 
     """
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [AllowAny]
 
     def post(self, request):
         
@@ -44,7 +45,7 @@ class RazorpayWebhookView(APIView):
         event_id = data.get("id")
         
         if event_type not in ["payment.captured", "payment.failed"]:
-            logger.info(f"Ignoring event type: {event_type}")
+            logger.info("Ignoring unsupported webhook event type")
             return Response({"status": "ignored", "event_type": event_type}, status=status.HTTP_200_OK)
         
         payment_data = data.get("payload", {}).get("payment", {}).get("entity", {})
@@ -52,16 +53,16 @@ class RazorpayWebhookView(APIView):
         order_id = payment_data.get("order_id")
         
         if not payment_id:
-            logger.error(f"Webhook {event_id} missing payment_id")
+            logger.error("Webhook missing payment reference")
             return Response({"error": "Missing payment_id"}, status=status.HTTP_400_BAD_REQUEST)
         
         if not order_id:
-            logger.error(f"Webhook {event_id} missing order_id")
+            logger.error("Webhook missing order reference")
             return Response({"error": "Missing order_id"}, status=status.HTTP_400_BAD_REQUEST)
         
         if not event_id:
             event_id = f"evt_manual_{payment_id}"
-            logger.warning(f"Webhook missing 'id' field, using generated ID: {event_id}")
+            logger.warning("Webhook missing 'id' field, using generated ID")
         
         audit_payload = {
             **data,
@@ -87,20 +88,20 @@ class RazorpayWebhookView(APIView):
             
             if not created:
                 if webhook_event.processed:
-                    logger.info(f"Webhook {event_id} already processed. Skipping.")
+                    logger.info("Webhook already processed. Skipping.")
                     return Response({"status": "already_processed"}, status=status.HTTP_200_OK)
                 else:
-                    logger.info(f"Webhook {event_id} exists but unprocessed. Retrying")
+                    logger.info("Webhook exists but unprocessed. Retrying")
             else:
-                logger.info(f"Webhook {event_id} persisted (Phase 1)")
+                logger.info("Webhook persisted (Phase 1)")
                 
         except Exception as e:
-            logger.exception(f"CRITICAL: Failed to persist webhook {event_id}: {str(e)}")
+            logger.exception(f"CRITICAL: Failed to persist webhook: {str(e)}")
             return Response({"error": "Failed to save webhook"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         if not event_type:
             error_msg = "Missing event_type in payload"
-            logger.error(f"{error_msg} for webhook {event_id}")
+            logger.error(error_msg)
             webhook_event.error_message = error_msg
             webhook_event.save(update_fields=['error_message', 'updated_at'])
             return Response({"error": "Malformed payload - missing event type"}, status=status.HTTP_400_BAD_REQUEST)
@@ -108,16 +109,16 @@ class RazorpayWebhookView(APIView):
         rp_service = RazorpayService()
         if not rp_service.verify_webhook_signature(payload_str, signature):
             error_msg = "Signature verification failed"
-            logger.error(f"{error_msg} for webhook {event_id}")
+            logger.error(error_msg)
             webhook_event.error_message = error_msg
             webhook_event.save(update_fields=['error_message', 'updated_at'])
             return Response({"error": "Invalid signature"}, status=status.HTTP_400_BAD_REQUEST)
         
-        logger.info(f"Webhook {event_id} signature verified (Phase 2)")
+        logger.info("Webhook signature verified (Phase 2)")
         
         try:
             process_webhook_task.delay(event_id)
-            logger.info(f"Webhook {event_id} ({event_type}) offloaded to Celery task.")
+            logger.info("Webhook offloaded to Celery task.")
         except Exception as e:
             error_msg = f"Failed to initiate Celery task: {str(e)}"
             logger.exception(f"{error_msg}")

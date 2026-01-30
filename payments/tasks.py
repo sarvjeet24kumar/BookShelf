@@ -20,8 +20,8 @@ def process_webhook_task(self, event_id):
     try:
         webhook_event = WebhookEvent.objects.get(event_id=event_id, processed=False)
     except WebhookEvent.DoesNotExist:
-        logger.warning(f"Webhook {event_id} already processed or not found.")
-        return f"Webhook {event_id} already processed or not found."
+        logger.warning("Webhook already processed or not found.")
+        return "Webhook already processed or not found."
 
     payload = webhook_event.payload
     event_type = webhook_event.event_type
@@ -31,7 +31,7 @@ def process_webhook_task(self, event_id):
     payment_id = payment_data.get("id")
 
     if not order_id:
-        error_msg = f"Webhook {event_id} missing order_id in payload."
+        error_msg = "Webhook missing order_id in payload."
         logger.error(error_msg)
         webhook_event.error_message = error_msg
         webhook_event.processed = True
@@ -50,24 +50,22 @@ def process_webhook_task(self, event_id):
                 elif event_type == "payment.failed":
                     _handle_failed(order_id)
                 else:
-                    logger.warning(f"Unhandled event type: {event_type}")
+                    logger.warning("Unhandled webhook event type")
 
                 webhook_event.processed = True
                 webhook_event.save(update_fields=["processed", "updated_at"])
-                logger.info(
-                    f"Successfully processed {event_type} for order {order_id} (tenant: {tenant.slug})"
-                )
-                return f"Successfully processed {event_type} for order {order_id}"
+                logger.info("Successfully processed webhook event")
+                return "Successfully processed webhook event"
 
     except Payment.DoesNotExist:
-        error_msg = f"Payment not found for order_id: {order_id}"
+        error_msg = "Payment not found for order reference"
         logger.error(error_msg)
         webhook_event.error_message = error_msg
         webhook_event.processed = True
         webhook_event.save(update_fields=["error_message", "processed", "updated_at"])
         return error_msg
     except Exception as e:
-        logger.exception(f"Error processing webhook task {event_id}: {str(e)}")
+        logger.exception(f"Error processing webhook task: {str(e)}")
         webhook_event.error_message = str(e)
         webhook_event.save(update_fields=["error_message", "updated_at"])
         raise self.retry(exc=e, countdown=CELERY_COUNTDOWN_LONG)
@@ -80,9 +78,7 @@ def _handle_captured(order_id, payment_id):
     payment = Payment.objects.select_for_update().get(razorpay_order_id=order_id)
 
     if payment.status in [PaymentStatus.VERIFIED, PaymentStatus.ACTIVATED]:
-        logger.info(
-            f"Payment {order_id} already in status {payment.status}. Skipping webhook processing."
-        )
+        logger.info("Payment already verified. Skipping webhook processing.")
         return
 
     payment.razorpay_payment_id = payment_id
@@ -93,7 +89,7 @@ def _handle_captured(order_id, payment_id):
     )
 
     payment.subscription.activate(payment)
-    logger.info(f"Payment {order_id} captured and subscription activated via webhook.")
+    logger.info("Payment captured and subscription activated via webhook.")
 
 
 def _handle_failed(order_id):
@@ -105,9 +101,9 @@ def _handle_failed(order_id):
         if payment.status == PaymentStatus.CREATED:
             payment.status = PaymentStatus.FAILED
             payment.save(update_fields=["status", "updated_at"])
-            logger.info(f"Payment {order_id} marked as failed.")
+            logger.info("Payment marked as failed.")
     except Payment.DoesNotExist:
-        logger.warning(f"Payment {order_id} not found when handling failed event.")
+        logger.warning("Payment record not found")
 
 
 @shared_task
@@ -157,7 +153,7 @@ def reconcile_payments_task():
 
         except Exception as e:
             logger.error(
-                f"Failed to reconcile payment {payment.razorpay_order_id}: {str(e)}"
+                f"Failed to reconcile payment: {str(e)}"
             )
 
     logger.info(f"Reconciliation complete. {reconciled_count} payments reconciled.")

@@ -38,12 +38,7 @@ class SignupView(APIView):
         ).first()
 
         if existing_user:
-            if existing_user.deleted_at:
-                raise ValidationError(
-                    "An account with this email cannot be created. Please contact support."
-                )
-            if existing_user.is_email_verified:
-                raise ValidationError(
+             raise ValidationError(
                     "An account with this email cannot be created. Please contact support."
                 )
 
@@ -52,7 +47,7 @@ class SignupView(APIView):
         email_verification_service.create(
             user.username, user.email, tenant_id=str(tenant.id)
         )
-        logger.info("Signup completed: user_id=%s, username=%s", user.id, user.username)
+        logger.info("Signup completed successfully")
 
         return Response(
             {"detail": "Verification code sent to your email."},

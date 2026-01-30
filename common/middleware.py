@@ -7,7 +7,6 @@ from common.logging_utils import (
     generate_request_id,
     set_request_id,
     set_tenant_id,
-    set_user_id,
 )
 from tenants.context import get_current_tenant
 
@@ -53,8 +52,6 @@ class RequestLogMiddleware:
         if tenant:
             set_tenant_id(str(tenant.id))
         
-        if hasattr(request, 'user') and request.user.is_authenticated:
-            set_user_id(str(request.user.id))
 
         execution_time_ms = int((time.time() - start_time) * 1000)
     

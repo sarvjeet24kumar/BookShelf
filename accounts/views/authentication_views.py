@@ -57,7 +57,7 @@ class LoginView(APIView):
 
         tenant_id = str(user.tenant_id) if user.tenant else None
         login_otp_service.create(user.username, user.email, tenant_id=tenant_id)
-        logger.info("Login OTP sent: user_id=%s, username=%s", user.id, user.username)
+        logger.info("Login OTP sent successfully")
 
         return Response(
             {
@@ -103,7 +103,7 @@ class VerifyLoginView(APIView):
         login_otp_service.cleanup(user.username, tenant_id=tenant_id)
 
         refresh = RefreshToken.for_user(user)
-        logger.info("User logged in: user_id=%s, username=%s", user.id, user.username)
+        logger.info("User logged in successfully")
 
         return Response(
             {

@@ -57,11 +57,11 @@ class LogoutView(APIView):
             try:
                 token = RefreshToken(refresh_token)
                 token.blacklist()
-                logger.info("Refresh token blacklisted: user_id=%s", request.user.id)
+                logger.info("Refresh token blacklisted")
             except TokenError as e:
                 raise ValidationError({"refresh": "Invalid or expired refresh token."})
 
-            logger.info("User logged out successfully: user_id=%s", request.user.id)
+            logger.info("User logged out successfully")
             return Response({"detail": "Logged out successfully"})
 
         except ValidationError:

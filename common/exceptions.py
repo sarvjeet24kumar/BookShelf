@@ -39,10 +39,9 @@ def custom_exception_handler(exc, context):
 
     if response is None or response.status_code >= 500:
         logger.exception(
-            "Unhandled exception in %s | path=%s | user=%s",
+            "Unhandled exception in %s | path=%s",
             view_name,
             getattr(request, "path", None),
-            getattr(request.user, "id", None) if request and request.user.is_authenticated else None,
         )
 
     if response is None:

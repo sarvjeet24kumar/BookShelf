@@ -32,7 +32,7 @@ class JWTQueryParamAuthentication(JWTAuthentication):
         try:
             validated_token = self.get_validated_token(token)
             user = self.get_user(validated_token)
-            logger.debug(f"JWT query param auth successful for user: {user.username}")
+            logger.debug("JWT query param auth successful")
             return (user, validated_token)
         except (InvalidToken, TokenError) as e:
             logger.warning(f"JWT query param auth failed: {str(e)}")

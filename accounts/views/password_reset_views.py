@@ -43,7 +43,7 @@ class ForgotPasswordView(APIView):
         
         tenant_id = str(user.tenant_id) if user.tenant else None
         password_reset_service.create(user.username, user.id, user.email, tenant_id=tenant_id)
-        logger.info("Password reset initiated: user_id=%s", user.id)
+        logger.info("Password reset initiated")
         
         return Response({
             "detail": "If an account exists, a reset link has been sent to the registered email."
@@ -90,7 +90,7 @@ class ResetPasswordView(APIView):
         user.save(update_fields=["password", "updated_at"])
         
         password_reset_service.cleanup(token)
-        logger.info("Password reset successful: user_id=%s", user.id)
+        logger.info("Password reset successful")
         
         return render(request, "accounts/reset_password.html", {"success": True})
 

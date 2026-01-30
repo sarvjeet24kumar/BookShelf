@@ -27,7 +27,7 @@ class PasswordResetTokenService(BaseOTPService):
         token = str(uuid.uuid4())
         self.store_otp(token, token, email, tenant_id=None, extra_data={"user_id": str(user_id)})
         
-        logger.info("Password reset token created: username=%s", username)
+        logger.info("Password reset token created successfully")
         return token
     
     def verify(self, token):

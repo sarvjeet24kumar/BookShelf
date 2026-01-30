@@ -27,76 +27,57 @@ class TenantAwareJWTAuthentication(JWTAuthentication):
     def authenticate(self, request):
         """Authenticate and set tenant context."""
         result = super().authenticate(request)
-        
+
         if result is not None:
             user, token = result
-            
 
             if user.deleted_at is not None:
                 logger.warning(
-                    "Blocked API access for deleted user: user_id=%s, email=%s",
-                    user.id,
-                    user.email
+                    "Blocked API access for deleted user",
                 )
                 raise AuthenticationFailed(
                     "This account has been deleted. Please contact support for assistance."
                 )
-            
 
             if not user.is_email_verified:
                 logger.warning(
-                    "Blocked API access for unverified user: user_id=%s, email=%s",
-                    user.id,
-                    user.email
+                    "Blocked API access for unverified user",
+
                 )
                 raise AuthenticationFailed(
                     "Please verify your email before accessing the application."
                 )
-            
 
             if not user.is_active:
-                logger.warning(
-                    "Blocked API access for inactive user: user_id=%s, email=%s",
-                    user.id,
-                    user.email
-                )
+                logger.warning("Blocked API access for inactive user")
                 raise AuthenticationFailed(
                     "This account has been suspended. Please contact support for assistance."
                 )
-            
 
-            tenant = getattr(user, 'tenant', None)
-            
+            tenant = getattr(user, "tenant", None)
+
             if tenant:
                 tenant.refresh_from_db()
-                
+
                 if tenant.deleted_at is not None:
-                    logger.warning(
-                        "Blocked API access for deleted tenant: tenant_id=%s, user_id=%s",
-                        tenant.id,
-                        user.id
-                    )
+                    logger.warning("Blocked API access for deleted tenant")
                     raise AuthenticationFailed(
                         "Your organization's account has been deleted. "
                         "Please contact support for assistance."
                     )
-                
+
                 if not tenant.is_active:
-                    logger.warning(
-                        "Blocked API access for suspended tenant: tenant_id=%s, user_id=%s",
-                        tenant.id,
-                        user.id
-                    )
+                    logger.warning("Blocked API access for suspended tenant")
                     raise AuthenticationFailed(
                         "Your organization's account has been suspended. "
                         "Please contact support for assistance."
                     )
-            
+
             set_current_tenant(tenant)
-            
+
             if tenant:
-                logger.debug("Tenant context set: %s (user: %s)", tenant.slug, user.email)
+                logger.debug("Tenant context set")
             else:
-                logger.debug("No tenant context set (SuperAdmin: %s)", user.email)
-        
+                logger.debug("No tenant context set (SuperAdmin access)")
+
         return result

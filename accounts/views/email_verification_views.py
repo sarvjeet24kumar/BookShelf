@@ -53,7 +53,7 @@ class VerifyEmailView(APIView):
         user.save(update_fields=["is_email_verified", "is_active", "updated_at"])
 
         email_verification_service.cleanup(user.username, tenant_id=tenant_id_str)
-        logger.info("Email verified: user_id=%s, username=%s", user.id, user.username)
+        logger.info("Email verified successfully")
 
         return Response(
             {"detail": "Email verified. Account activated successfully."},
@@ -91,7 +91,7 @@ class ResendOTPView(APIView):
         email_verification_service.create(
             user.username, user.email, tenant_id=tenant_id_str
         )
-        logger.info("OTP resent: username=%s", user.username)
+        logger.info("OTP resent successfully")
 
         return Response(
             {"detail": "New verification code sent to your email."},

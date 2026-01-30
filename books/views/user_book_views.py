@@ -93,13 +93,10 @@ class UserBooksView(UserLibraryPermissionMixin, APIView):
                 user_book.status = status_value
                 user_book.save(update_fields=["status", "updated_at"])
                 logger.info(
-                    "Book restored to library: book_id=%s, user_id=%s, by=%s",
-                    book.id,
-                    target_user.id,
-                    request.user.id,
+                    "Book restored to library"
                 )
                 return Response(
-                    {"message": "Book added to library."},
+                    {"detail": "Book added to library."},
                     status=status.HTTP_201_CREATED,
                 )
             else:
@@ -116,14 +113,11 @@ class UserBooksView(UserLibraryPermissionMixin, APIView):
         UserBook.objects.create(user=target_user, book=book, status=status_value)
 
         logger.info(
-            "Book added to library: book_id=%s, user_id=%s, by=%s",
-            book.id,
-            target_user.id,
-            request.user.id,
+            "Book added to library"
         )
 
         return Response(
-            {"message": "Book added to library."},
+            {"detail": "Book added to library."},
             status=status.HTTP_201_CREATED,
         )
 
@@ -170,15 +164,11 @@ class UserBookDetailView(UserLibraryPermissionMixin, APIView):
         user_book.save(update_fields=["status", "updated_at"])
 
         logger.info(
-            "Book status updated: book_id=%s, user_id=%s, new_status=%s, by=%s",
-            user_book.book_id,
-            target_user.id,
-            user_book.status,
-            request.user.id,
+            "Book status updated"
         )
 
         return Response(
-            {"message": "Book status updated successfully."},
+            {"detail": "Book status updated successfully."},
             status=status.HTTP_200_OK,
         )
 
@@ -188,10 +178,7 @@ class UserBookDetailView(UserLibraryPermissionMixin, APIView):
         user_book.soft_delete()
 
         logger.info(
-            "Book removed from library: book_id=%s, user_id=%s, by=%s",
-            user_book.book_id,
-            target_user.id,
-            request.user.id,
+            "Book removed from library"
         )
 
         return Response(status=status.HTTP_204_NO_CONTENT)

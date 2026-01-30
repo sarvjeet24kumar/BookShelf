@@ -29,7 +29,7 @@ class CheckoutView(APIView):
 
     def get(self, request):
         user = request.user
-        logger.info(f"Checkout access attempt: user={user.username}, role={user.role}, tenant={user.tenant}")
+        logger.info("Checkout access attempt")
         tenant = user.tenant
     
         if not tenant:

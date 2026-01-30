@@ -45,7 +45,7 @@ class TenantListCreateView(APIView):
         tenant = serializer.save()
 
         logger.info(
-            "Tenant created: %s by Super Admin %s", tenant.slug, request.user.id
+            "Tenant created: %s by Super Admin", tenant.slug
         )
 
         return Response(TenantSerializer(tenant).data, status=status.HTTP_201_CREATED)
@@ -89,7 +89,7 @@ class TenantDetailView(APIView):
         serializer.save()
 
         logger.info(
-            "Tenant updated: %s by Super Admin %s", tenant.slug, request.user.id
+            "Tenant updated: %s by Super Admin", tenant.slug
         )
 
         return Response(TenantDetailSerializer(tenant).data)
@@ -99,7 +99,7 @@ class TenantDetailView(APIView):
         tenant.soft_delete()
 
         logger.info(
-            "Tenant deleted: %s by Super Admin %s", tenant.slug, request.user.id
+            "Tenant deleted: %s by Super Admin", tenant.slug
         )
 
         return Response(status=status.HTTP_204_NO_CONTENT)

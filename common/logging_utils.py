@@ -4,7 +4,6 @@ from contextvars import ContextVar
 
 request_id_var = ContextVar('request_id', default=None)
 tenant_id_var= ContextVar('tenant_id', default=None)
-user_id_var= ContextVar('user_id', default=None)
 
 
 def generate_request_id():
@@ -32,21 +31,10 @@ def get_tenant_id():
     return tenant_id_var.get()
 
 
-def set_user_id(user_id):
-    """Set the user ID for the current context."""
-    user_id_var.set(user_id)
-
-
-def get_user_id():
-    """Get the user ID from the current context."""
-    return user_id_var.get()
-
-
 def clear_context():
     """Clear all context variables. Called after request completion."""
     request_id_var.set(None)
     tenant_id_var.set(None)
-    user_id_var.set(None)
 
 
 class LogContextFilter(logging.Filter):
@@ -63,7 +51,5 @@ class LogContextFilter(logging.Filter):
         record.request_id = get_request_id() or '-'
         
         record.tenant_id = get_tenant_id() or '-'
-        
-        record.user_id = get_user_id() or '-'
         
         return True

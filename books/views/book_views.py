@@ -41,7 +41,7 @@ class BookView(APIView):
             )
 
             if cached_books:
-                logger.debug(f"Cache HIT for {cache_status}: tenant={tenant_id}")
+                logger.debug(f"Cache HIT for {cache_status}")
                 paginator = CommonPagination()
                 page = paginator.paginate_queryset(cached_books, request)
                 return paginator.get_paginated_response(
@@ -71,7 +71,7 @@ class BookView(APIView):
             book_cache_service.set_books_cache(
                 tenant_id, books_list, status=cache_status
             )
-            logger.debug(f"Cache POPULATED for {cache_status}: tenant={tenant_id}")
+            logger.debug(f"Cache POPULATED for {cache_status}")
             queryset = books_list
 
         paginator = CommonPagination()
@@ -96,7 +96,7 @@ class BookView(APIView):
 
         book = serializer.save()
 
-        logger.info("Book created: book_id=%s, created_by=%s", book.id, request.user.id)
+        logger.info("Book created successfully")
 
         return Response(
             BookListSerializer(book, context={"request": request}).data,
@@ -147,11 +147,7 @@ class BookDetailView(APIView):
 
         if not (is_admin or (is_owner and is_pending)):
             logger.warning(
-                "Blocked: Unauthorized update attempt: book_id=%s, user_id=%s, role=%s, status=%s",
-                id,
-                user.id,
-                user.role,
-                book.request_status,
+                "Blocked: Unauthorized update attempt"
             )
             if not is_admin and is_owner and not is_pending:
                 raise PermissionDenied(
@@ -165,7 +161,7 @@ class BookDetailView(APIView):
         serializer.is_valid(raise_exception=True)
         updated_book = serializer.save()
 
-        logger.info("Book updated: book_id=%s, updated_by=%s", book.id, request.user.id)
+        logger.info("Book updated successfully")
 
         response_serializer = BookListSerializer(
             updated_book, context={"request": request}
@@ -175,9 +171,7 @@ class BookDetailView(APIView):
     def delete(self, request, id):
         if request.user.role != UserRole.ADMIN:
             logger.warning(
-                "Blocked: Non-admin tried to delete book: book_id=%s, user_id=%s",
-                id,
-                request.user.id,
+                "Blocked: Non-admin tried to delete book"
             )
             raise PermissionDenied("Only admins can delete books.")
 
@@ -186,9 +180,7 @@ class BookDetailView(APIView):
 
         if active_user_books:
             logger.warning(
-                "Blocked: Cannot delete book in user libraries: book_id=%s, admin_id=%s",
-                book.id,
-                request.user.id,
+                "Blocked: Cannot delete book in user libraries"
             )
             return Response(
                 {
@@ -202,7 +194,7 @@ class BookDetailView(APIView):
         book.book_genres.update(deleted_at=book.deleted_at)
 
         logger.info(
-            "Book soft-deleted: book_id=%s, deleted_by=%s", book.id, request.user.id
+            "Book soft-deleted by admin"
         )
 
         return Response(status=status.HTTP_204_NO_CONTENT)

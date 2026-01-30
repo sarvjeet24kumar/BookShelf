@@ -36,7 +36,7 @@ class ChangePasswordView(APIView):
         user.set_password(new_password)
         user.save(update_fields=['password', 'updated_at'])
         
-        logger.info(f"Password changed successfully: user_id={user.id}, username={user.username}")
+        logger.info("Password changed successfully")
         
         return Response(
             {"detail": "Password changed successfully. Please login with your new password."},

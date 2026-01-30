@@ -69,9 +69,7 @@ class UserView(ListCreateAPIView):
             user.username, user.email, tenant_id=str(tenant_id)
         )
 
-        logger.info(
-            "Admin created user: user_id=%s, created_by=%s", user.id, request.user.id
-        )
+        logger.info("Admin created user successfully")
 
         return Response(
             {"detail": "Verification code sent to your email."},
@@ -116,18 +114,14 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
 
         if "email" in request.data or "role" in request.data:
             logger.warning(
-                "Blocked: Attempt to update immutable fields (email/role): user_id=%s, attempted_by=%s",
-                user.id,
-                request.user.id,
+                "Blocked: Attempt to update immutable fields (email/role)"
             )
             raise PermissionDenied("Email and role cannot be changed.")
 
         if request.user.role == UserRole.ADMIN and not is_self:
             if user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
                 logger.warning(
-                    "Blocked: Tenant admin tried to update admin/super admin: target_id=%s, attempted_by=%s",
-                    user.id,
-                    request.user.id,
+                    "Blocked: Tenant admin tried to update admin/super admin"
                 )
                 raise PermissionDenied("Tenant admin cannot update other admin accounts.")
 
@@ -140,8 +134,7 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
             restricted_fields = {"is_active", "deleted_at"}
             if any(field in request.data for field in restricted_fields):
                 logger.warning(
-                    "Blocked: Regular user tried to update restricted fields: user_id=%s",
-                    user.id,
+                    "Blocked: Regular user tried to update restricted fields"
                 )
                 raise PermissionDenied(
                     "You cannot update restricted fields (is_active, deleted_at)."
@@ -157,13 +150,11 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
         if is_admin and original_is_active and not updated_user.is_active:
             blacklist_user_tokens(updated_user)
             logger.info(
-                "User suspended and tokens blacklisted: user_id=%s, suspended_by=%s",
-                user.id,
-                request.user.id,
+                "User suspended and tokens blacklisted"
             )
         else:
             logger.info(
-                "User updated: user_id=%s, updated_by=%s", user.id, request.user.id
+                "User updated successfully"
             )
 
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -177,19 +168,14 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
         is_self = user.id == request.user.id
         if request.user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN] and is_self:
             logger.warning(
-                "Blocked: Admin tried to delete self: user_id=%s, role=%s",
-                request.user.id,
-                request.user.role,
+                "Blocked: Admin tried to delete self"
             )
             raise PermissionDenied("Admins cannot delete their own account.")
 
         if request.user.role == UserRole.ADMIN and not is_self:
             if user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
                 logger.warning(
-                    "Blocked: Tenant admin tried to delete admin/super admin: target_id=%s, target_role=%s, attempted_by=%s",
-                    user.id,
-                    user.role,
-                    request.user.id,
+                    "Blocked: Tenant admin tried to delete admin/super admin"
                 )
                 raise PermissionDenied("Tenant admin cannot delete other admin or super admin accounts.")
 
@@ -200,15 +186,13 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
                 user.save(update_fields=["is_active"])
                 blacklist_user_tokens(user)
                 logger.info(
-                    "User self-deleted and tokens blacklisted: user_id=%s", user.id
+                    "User self-deleted and tokens blacklisted"
                 )
             else:
                 user.soft_delete()
                 blacklist_user_tokens(user)
                 logger.info(
-                    "Admin deleted user and blacklisted tokens: user_id=%s, deleted_by=%s",
-                    user.id,
-                    request.user.id,
+                    "Admin deleted user and blacklisted tokens"
                 )
 
         return Response(status=status.HTTP_204_NO_CONTENT)

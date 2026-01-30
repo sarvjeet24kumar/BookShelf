@@ -33,10 +33,10 @@ class BookCacheService:
         cached_data = cache.get(cache_key)
 
         if cached_data:
-            logger.debug(f" Cache HIT: {cache_key}")
+            logger.debug("Cache HIT")
             return cached_data
 
-        logger.debug(f" Cache MISS: {cache_key}")
+        logger.debug("Cache MISS")
         return None
 
     @staticmethod
@@ -58,7 +58,7 @@ class BookCacheService:
 
         cache.set(cache_key, books_data, timeout=CACHE_TTL)
         logger.info(
-            f"Cached {len(books_data)} books for tenant {tenant_id} (TTL={CACHE_TTL}s)"
+            f"Cached {len(books_data)} books (TTL={CACHE_TTL}s)"
         )
 
     @staticmethod
@@ -73,7 +73,7 @@ class BookCacheService:
         ]
 
         cache.delete_many(cache_keys)
-        logger.info(f"  Invalidated book cache for tenant {tenant_id}")
+        logger.info("Invalidated book cache")
 
 
 book_cache_service = BookCacheService()

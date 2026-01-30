@@ -26,7 +26,7 @@ class RazorpayService:
         }
         try:
             order = self.client.order.create(data=data)
-            logger.info(f"Razorpay order created: {order['id']}")
+            logger.info("Razorpay order created successfully")
             return order
         except Exception as e:
             logger.error(f"Razorpay order creation failed: {str(e)}")
@@ -48,10 +48,10 @@ class RazorpayService:
                 'razorpay_signature': razorpay_signature
             }
             self.client.utility.verify_payment_signature(params)
-            logger.info(f"Payment signature verified for order {razorpay_order_id}")
+            logger.info("Payment signature verified")
             return True
         except razorpay.errors.SignatureVerificationError:
-            logger.warning(f"Payment signature verification failed for order {razorpay_order_id}")
+            logger.warning("Payment signature verification failed")
             return False
         except Exception as e:
             logger.error(f"Error verifying payment signature: {str(e)}")

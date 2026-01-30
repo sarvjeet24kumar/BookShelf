@@ -24,7 +24,10 @@ logger = logging.getLogger(__name__)
 @shared_task(
     bind=True,
     autoretry_for=(Exception,),
-    retry_kwargs={"max_retries": CELERY_MAX_RETRIES, "countdown": CELERY_COUNTDOWN_SHORT},
+    retry_kwargs={
+        "max_retries": CELERY_MAX_RETRIES,
+        "countdown": CELERY_COUNTDOWN_SHORT,
+    },
 )
 def send_otp_email(self, email: str, otp: str):
     """
@@ -61,8 +64,7 @@ BookShelf Team
     email_message.attach_alternative(html_message, "text/html")
     email_message.send(fail_silently=False)
 
-    logger.info("OTP email sent: email=%s", email)
-
+    logger.info("Login OTP sent successfully")
 
 
 @shared_task
@@ -71,53 +73,55 @@ def cleanup_unverified_users():
     Delete user records that are unverified for more than 24 hours.
     """
     User = get_user_model()
-    cutoff_time = timezone.now() - timedelta(hours=DEFAULT_UNVERIFIED_USER_CLEANUP_HOURS)
-    
+    cutoff_time = timezone.now() - timedelta(
+        hours=DEFAULT_UNVERIFIED_USER_CLEANUP_HOURS
+    )
+
     # Find unverified users older than 24 hours
     old_unverified_users = User.all_objects.filter(
-        is_email_verified=False,
-        created_at__lt=cutoff_time
+        is_email_verified=False, created_at__lt=cutoff_time
     )
-    
+
     count = old_unverified_users.count()
-    
+
     if count > 0:
-        # Hard delete (not soft delete)
         old_unverified_users.delete()
         logger.info(f"Cleaned up {count} unverified users older than 24 hours")
-    
+
     return f"Deleted {count} unverified users"
 
 
 @shared_task
 def cleanup_deleted_users_data():
     """
-    Permanently delete  user data (reading lists/UserBooks) for users 
+    Permanently delete  user data (reading lists/UserBooks) for users
     who have been soft-deleted for longer than the retention period.
     """
     User = get_user_model()
-    retention_days = getattr(settings, "USER_DATA_RETENTION_DAYS", DEFAULT_USER_DATA_RETENTION_DAYS)
-    cutoff_time = timezone.now() - timedelta(days=retention_days)
-    
-    users_to_purge = User.all_objects.filter(
-        deleted_at__lt=cutoff_time
+    retention_days = getattr(
+        settings, "USER_DATA_RETENTION_DAYS", DEFAULT_USER_DATA_RETENTION_DAYS
     )
-    
+    cutoff_time = timezone.now() - timedelta(days=retention_days)
+
+    users_to_purge = User.all_objects.filter(deleted_at__lt=cutoff_time)
+
     total_purged = 0
     for user in users_to_purge:
         purged_count = user.user_books.all().delete()[0]
         if purged_count > 0:
             total_purged += purged_count
-            logger.info(f"Purged {purged_count} records for soft-deleted user_id={user.id}")
-            
-    return f"Purged data for {users_to_purge.count()} users, total records deleted: {total_purged}"
+            logger.info(f"Purged {purged_count} records for soft-deleted user")
 
+    return f"Purged data for {users_to_purge.count()} users, total records deleted: {total_purged}"
 
 
 @shared_task(
     bind=True,
     autoretry_for=(Exception,),
-    retry_kwargs={"max_retries": CELERY_MAX_RETRIES, "countdown": CELERY_COUNTDOWN_SHORT},
+    retry_kwargs={
+        "max_retries": CELERY_MAX_RETRIES,
+        "countdown": CELERY_COUNTDOWN_SHORT,
+    },
 )
 def send_password_reset_email(self, email: str, token: str):
     """
@@ -144,7 +148,9 @@ BookShelf Team
         "accounts/emails/password_reset.html",
         {
             "reset_url": reset_url,
-            "expiry_minutes": getattr(settings, "OTP_EXPIRY_MINUTES", DEFAULT_OTP_EXPIRY_MINUTES),
+            "expiry_minutes": getattr(
+                settings, "OTP_EXPIRY_MINUTES", DEFAULT_OTP_EXPIRY_MINUTES
+            ),
         },
     )
 
@@ -157,34 +163,36 @@ BookShelf Team
     email_message.attach_alternative(html_message, "text/html")
     email_message.send(fail_silently=False)
 
-    logger.info("Password reset email sent: email=%s", email)
+    logger.info("Password reset email sent successfully")
 
 
 @shared_task(
     bind=True,
     autoretry_for=(Exception,),
-    retry_kwargs={"max_retries": CELERY_MAX_RETRIES, "countdown": CELERY_COUNTDOWN_LONG},
+    retry_kwargs={
+        "max_retries": CELERY_MAX_RETRIES,
+        "countdown": CELERY_COUNTDOWN_LONG,
+    },
 )
 def seed_tenant_task(self, tenant_id: str, admin_user_id: str):
     """
     Asynchronous task to seed a new tenant with initial data.
     """
-   
-    
-    cache_key = f"tenant_seeded:{tenant_id}"
-    
-    if cache.get(cache_key):
-        logger.info(f"Tenant {tenant_id} already seeded, skipping task.")
-        return f"Tenant {tenant_id} already seeded"
 
-    logger.info(f"Executing Celery task: Seeding tenant {tenant_id}")
-    
+    cache_key = f"tenant_seeded:{tenant_id}"
+
+    if cache.get(cache_key):
+        logger.info("Tenant already seeded, skipping task.")
+        return "Tenant already seeded"
+
+    logger.info("Executing Celery task: Seeding tenant")
+
     try:
-        call_command('seed', tenant_id=tenant_id, admin_user_id=admin_user_id)
+        call_command("seed", tenant_id=tenant_id, admin_user_id=admin_user_id)
         cache.set(cache_key, True, timeout=TENANT_SEED_CACHE_TTL)
-        logger.info(f"Successfully seeded tenant {tenant_id}")
-        return f"Successfully seeded tenant {tenant_id}"
-        
+        logger.info("Successfully seeded tenant")
+        return "Successfully seeded tenant"
+
     except Exception as e:
-        logger.error(f"Error seeding tenant {tenant_id}: {str(e)}")
+        logger.error(f"Error seeding tenant: {str(e)}")
         raise e

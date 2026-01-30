@@ -16,12 +16,15 @@ LOGGING = {
         "verbose": {
             "format": (
                 "[ %(asctime)s - %(lineno)d - %(name)s - %(levelname)s "
-                "- request_id=%(request_id)s tenant_id=%(tenant_id)s user_id=%(user_id)s "
+                "- request_id=%(request_id)s tenant_id=%(tenant_id)s "
                 "- %(message)s ]"
             ),
         },
         "simple": {
-            "format": "%(levelname)s %(message)s",
+            "format": (
+                "[ %(asctime)s - %(lineno)d - %(name)s - %(levelname)s "
+                "- %(message)s ]"
+            ),
         },
     },
     "handlers": {

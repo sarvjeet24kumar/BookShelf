@@ -19,7 +19,7 @@ def invalidate_book_cache_on_change(sender, instance, **kwargs):
     Invalidate cache when book is created, updated, or deleted.
     """
     if instance.tenant_id:
-        logger.debug(f"Signal fired: Book {instance.id} changed, queuing cache invalidation")
+        logger.debug("Signal fired: Book changed, queuing cache invalidation")
         invalidate_book_cache_task.delay(str(instance.tenant_id))
 
 
@@ -29,5 +29,5 @@ def invalidate_book_cache_on_genre_change(sender, instance, **kwargs):
     Invalidate cache when book-genre mapping changes.
     """
     if instance.book and instance.book.tenant_id:
-        logger.debug(f"Signal fired: BookGenre for book {instance.book.id} changed, queuing cache invalidation")
+        logger.debug("Signal fired: BookGenre changed, queuing cache invalidation")
         invalidate_book_cache_task.delay(str(instance.book.tenant_id))

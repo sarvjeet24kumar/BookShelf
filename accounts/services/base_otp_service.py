@@ -36,12 +36,7 @@ class BaseOTPService(ABC):
         
         self.send_otp_notification(email, plain_otp)
 
-        logger.info(
-            "%s OTP created: identifier=%s, tenant=%s",
-            self.prefix,
-            identifier,
-            tenant_id or "None",
-        )
+        logger.info("%s OTP created successfully", self.prefix)
 
     def validate_otp(self, identifier, otp, tenant_id=None):
         """Validate OTP by comparing hashes. Returns (success, error, data)."""

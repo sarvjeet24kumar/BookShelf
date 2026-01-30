@@ -29,20 +29,20 @@ def auto_seed_tenant_on_first_admin(sender, instance, created, **kwargs):
         return
 
     if instance.tenant is None:
-        logger.debug(f"Skipping seeding for global superadmin: {instance.username}")
+        logger.debug("Skipping seeding for global superadmin")
         return
     
     if is_tenant_seeded(instance.tenant.id):
-        logger.info(f"Tenant {instance.tenant.slug} already seeded")
+        logger.info("Tenant already seeded")
         return
     
     logger.info(
-        f"Queuing auto-seeding for tenant: tenant={instance.tenant.slug}, admin={instance.username}"
+        "Queuing auto-seeding for tenant"
     )
     
     try:
         seed_tenant_task.delay(str(instance.tenant.id), str(instance.id))
-        logger.info(f"Tenant {instance.tenant.slug} seeding task queued")
+        logger.info("Tenant seeding task queued")
     except Exception as e:
-        logger.exception(f"Failed to queue seeding for tenant {instance.tenant.id}: {str(e)}")
+        logger.exception(f"Failed to queue seeding for tenant: {str(e)}")
 

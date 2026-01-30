@@ -146,6 +146,4 @@ class GenreDetailView(APIView):
             request.user.id,
         )
 
-        return Response(
-            {"detail": "Genre deleted successfully."}, status=status.HTTP_204_NO_CONTENT
-        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
