@@ -12,6 +12,7 @@ from tenants.serializers.tenant_serializers import (
     TenantCreateSerializer,
     TenantUpdateSerializer,
 )
+from common.pagination import CommonPagination
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +35,14 @@ class TenantListCreateView(APIView):
             tenants = Tenant.all_objects.all().order_by("-created_at")
         else:
             tenants = Tenant.all_objects.filter(id=user.tenant_id)
+        paginator = CommonPagination()
+        page = paginator.paginate_queryset(tenants, request)
+        if page is not None:
+            serializer = TenantSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
 
         serializer = TenantSerializer(tenants, many=True)
-        return Response({"count": tenants.count(), "results": serializer.data})
+        return Response(serializer.data)
 
     def post(self, request):
         serializer = TenantCreateSerializer(data=request.data)
@@ -44,9 +50,7 @@ class TenantListCreateView(APIView):
 
         tenant = serializer.save()
 
-        logger.info(
-            "Tenant created: %s by Super Admin", tenant.slug
-        )
+        logger.info("Tenant created: %s by Super Admin", tenant.slug)
 
         return Response(TenantSerializer(tenant).data, status=status.HTTP_201_CREATED)
 
@@ -88,9 +92,7 @@ class TenantDetailView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        logger.info(
-            "Tenant updated: %s by Super Admin", tenant.slug
-        )
+        logger.info("Tenant updated: %s by Super Admin", tenant.slug)
 
         return Response(TenantDetailSerializer(tenant).data)
 
@@ -98,8 +100,6 @@ class TenantDetailView(APIView):
         tenant = self.get_object(request, id)
         tenant.soft_delete()
 
-        logger.info(
-            "Tenant deleted: %s by Super Admin", tenant.slug
-        )
+        logger.info("Tenant deleted: %s by Super Admin", tenant.slug)
 
         return Response(status=status.HTTP_204_NO_CONTENT)

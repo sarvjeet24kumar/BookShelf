@@ -1,5 +1,6 @@
 import logging
 import json
+from datetime import datetime
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -8,9 +9,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 
-from payments.models import WebhookEvent
+from payments.models import WebhookEvent, Payment
 from payments.services.razorpay_service import RazorpayService
 from payments.tasks import process_webhook_task
+from tenants.context import set_current_tenant
 
 logger = logging.getLogger(__name__)
 
@@ -60,10 +62,22 @@ class RazorpayWebhookView(APIView):
             logger.error("Webhook missing order reference")
             return Response({"error": "Missing order_id"}, status=status.HTTP_400_BAD_REQUEST)
         
+        # Identify tenant for logging context
+        try:
+            payment = Payment.all_objects.select_related('tenant').get(razorpay_order_id=order_id)
+            set_current_tenant(payment.tenant)
+        except Payment.DoesNotExist:
+            logger.warning(f"Tenant identification failed: Payment not found for order {order_id}")
+
         if not event_id:
             event_id = f"evt_manual_{payment_id}"
             logger.warning("Webhook missing 'id' field, using generated ID")
         
+        # Convert Razorpay's unix timestamp to readable format for auditing within the payload
+        razorpay_created_at = data.get("created_at")
+        if isinstance(razorpay_created_at, int):
+            data["created_at"] = datetime.fromtimestamp(razorpay_created_at, tz=timezone.UTC).isoformat()
+
         audit_payload = {
             **data,
             "_webhook_metadata": {

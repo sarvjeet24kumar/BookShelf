@@ -1,6 +1,7 @@
 import uuid
 import logging
 from contextvars import ContextVar
+from tenants.context import get_current_tenant
 
 request_id_var = ContextVar('request_id', default=None)
 tenant_id_var= ContextVar('tenant_id', default=None)
@@ -50,6 +51,12 @@ class LogContextFilter(logging.Filter):
         """
         record.request_id = get_request_id() or '-'
         
-        record.tenant_id = get_tenant_id() or '-'
+        tenant_id = get_tenant_id()
+        if not tenant_id:
+            tenant = get_current_tenant()
+            if tenant:
+                tenant_id = str(tenant.id)
+        
+        record.tenant_id = tenant_id or '-'
         
         return True

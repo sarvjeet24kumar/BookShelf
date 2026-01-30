@@ -36,16 +36,15 @@ class Subscription(BaseModel):
         Idempotent activation of subscription.
         Updates tenant plan and subscription status.
         """
-        if self.status == SubscriptionStatus.ACTIVE:
-            return
+        if self.status != SubscriptionStatus.ACTIVE:
+            self.status = SubscriptionStatus.ACTIVE
+            self.activated_at = timezone.now()
+            self.save(update_fields=['status', 'activated_at', 'updated_at'])
 
-        self.status = SubscriptionStatus.ACTIVE
-        self.activated_at = timezone.now()
-        self.save(update_fields=['status', 'activated_at', 'updated_at'])
+            # Correctly upgrade tenant plan
+            self.tenant.subscription_plan = SubscriptionPlan.PREMIUM
+            self.tenant.save(update_fields=['subscription_plan', 'updated_at'])
 
-        self.tenant.subscription_plan = SubscriptionPlan.PREMIUM
-        self.tenant.save(update_fields=['subscription_plan', 'updated_at'])
-
-
+        # Always finalize the payment status on successful activation call
         payment.status = PaymentStatus.ACTIVATED
         payment.save(update_fields=['status', 'updated_at'])

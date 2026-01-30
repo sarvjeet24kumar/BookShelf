@@ -25,13 +25,10 @@ class RequestIDMiddleware:
         request_id = request.headers.get('X-Request-ID') or generate_request_id()
         
         set_request_id(request_id)
-        
         request.request_id = request_id
         
         response = self.get_response(request)
-        
         response['X-Request-ID'] = request_id
-        
         return response
 
 

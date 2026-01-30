@@ -48,11 +48,13 @@ class TenantAwareAllObjectsManager(models.Manager):
 
 
 class TenantAwareUserManager(UserManager):
-    """
-    Manager for User model that combines UserManager with tenant filtering.
-    Provides create_user, create_superuser methods.
-    """
-    
+    def get_queryset(self):
+        queryset = super().get_queryset().filter(deleted_at__isnull=True)
+        tenant = get_current_tenant()
+        if tenant:
+            return queryset.filter(tenant=tenant)
+        return queryset
+
     def _create_user(self, username, email, password, **extra_fields):
         """Override to ensure email is normalized."""
         if not username:

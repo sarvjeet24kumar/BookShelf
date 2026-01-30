@@ -58,23 +58,27 @@ class VerifyPaymentView(APIView):
                 {"error": "Payment record not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        # Idempotency: Skip if already verified or activated
-        if payment.status in [PaymentStatus.VERIFIED, PaymentStatus.ACTIVATED]:
-            logger.info("Payment already verified. Skipping.")
-            return Response(
-                {
-                    "message": "Payment already verified and subscription activated",
-                    "order_id": razorpay_order_id,
-                    "status": payment.status,
-                    "subscription_status": payment.subscription.status,
-                },
-                status=status.HTTP_200_OK,
-            )
-
         with TenantContext(payment.tenant):
+            # Always save signature and payment ID if the verification succeeded
+            payment.razorpay_payment_id = razorpay_payment_id
+            payment.razorpay_signature = razorpay_signature
+
+            # If already processed, just save the signature and return
+            if payment.status in [PaymentStatus.VERIFIED, PaymentStatus.ACTIVATED]:
+                payment.save(update_fields=["razorpay_payment_id", "razorpay_signature", "updated_at"])
+                logger.info("Payment already verified. Updated signature metadata.")
+                return Response(
+                    {
+                        "message": "Payment already verified and subscription activated",
+                        "order_id": razorpay_order_id,
+                        "status": payment.status,
+                        "subscription_status": payment.subscription.status,
+                    },
+                    status=status.HTTP_200_OK,
+                )
+
+            # Otherwise, perform the full activation in a transaction
             with transaction.atomic():
-                payment.razorpay_payment_id = razorpay_payment_id
-                payment.razorpay_signature = razorpay_signature
                 payment.status = PaymentStatus.VERIFIED
                 payment.verified_at = timezone.now()
                 payment.save(
@@ -88,7 +92,6 @@ class VerifyPaymentView(APIView):
                 )
 
                 payment.subscription.activate(payment)
-
                 logger.info("Payment verified and subscription activated")
 
         return Response(
