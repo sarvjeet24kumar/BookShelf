@@ -38,7 +38,9 @@ services:
     ports:
       - "${DOCKER_API_PORT}:8000"
     command: >
-      sh -c "uv run python manage.py migrate --fake accounts 0007 &&
+      sh -c "uv run python manage.py migrate contenttypes &&
+             uv run python manage.py migrate auth &&
+             uv run python manage.py migrate --fake accounts 0007 &&
              uv run python manage.py migrate --fake accounts 0008 &&
              uv run python manage.py migrate &&
              uv run python manage.py runserver 0.0.0.0:8000"
