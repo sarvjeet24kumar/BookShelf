@@ -19,7 +19,7 @@ services:
       - "${DOCKER_REDIS_PORT}:6379"
 
   api:
-    build: .
+    image: ${DOCKERHUB_USERNAME:-sarvjeet24kumar}/bookshelf:latest
     container_name: bookshelf-api
     depends_on:
       - db
@@ -43,7 +43,7 @@ services:
              uv run python manage.py runserver 0.0.0.0:8000"
 
   worker:
-    build: .
+    image: ${DOCKERHUB_USERNAME:-sarvjeet24kumar}/bookshelf:latest
     container_name: bookshelf-worker
     depends_on:
       - db
@@ -62,7 +62,7 @@ services:
     command: uv run celery -A config worker --loglevel=info
 
   beat:
-    build: .
+    image: ${DOCKERHUB_USERNAME:-sarvjeet24kumar}/bookshelf:latest
     container_name: bookshelf-beat
     depends_on:
       - db
