@@ -46,6 +46,7 @@ jobs:
       run: |
         docker compose exec api sh -c "uv run python manage.py migrate contenttypes --no-input && \
                                        uv run python manage.py migrate auth --no-input && \
+                                       uv run python manage.py migrate accounts 0006 --no-input && \
                                        uv run python manage.py migrate --fake accounts 0007 --no-input && \
                                        uv run python manage.py migrate --fake accounts 0008 --no-input && \
                                        uv run python manage.py migrate --no-input && \
@@ -130,6 +131,7 @@ jobs:
             docker compose up -d
             docker compose exec -T api sh -c "uv run python manage.py migrate contenttypes --no-input && \
                                               uv run python manage.py migrate auth --no-input && \
+                                              uv run python manage.py migrate accounts 0006 --no-input && \
                                               uv run python manage.py migrate --fake accounts 0007 --no-input && \
                                               uv run python manage.py migrate --fake accounts 0008 --no-input && \
                                               uv run python manage.py migrate --no-input"
