@@ -1,5 +1,4 @@
 services:
-# Database Configuration
   db:
     image: postgres:15-alpine
     container_name: bookshelf-db
@@ -13,13 +12,14 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   redis:
-    image: redis:7-alpine
+    build: .
+    image: ${DOCKERHUB_USERNAME:-sarvjeet24kumar}/bookshelf:latest
     container_name: bookshelf-redis
     ports:
       - "${DOCKER_REDIS_PORT}:6379"
 
   api:
-    image: ${DOCKERHUB_USERNAME:-sarvjeet24kumar}/bookshelf:latest
+    build: .
     container_name: bookshelf-api
     depends_on:
       - db
@@ -43,7 +43,7 @@ services:
              uv run python manage.py runserver 0.0.0.0:8000"
 
   worker:
-    image: ${DOCKERHUB_USERNAME:-sarvjeet24kumar}/bookshelf:latest
+    build: .
     container_name: bookshelf-worker
     depends_on:
       - db
@@ -62,7 +62,7 @@ services:
     command: uv run celery -A config worker --loglevel=info
 
   beat:
-    image: ${DOCKERHUB_USERNAME:-sarvjeet24kumar}/bookshelf:latest
+    build: .
     container_name: bookshelf-beat
     depends_on:
       - db

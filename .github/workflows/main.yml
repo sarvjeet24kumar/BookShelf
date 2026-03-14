@@ -91,9 +91,8 @@ jobs:
 
     - name: Build Docker Image via Docker Compose
       run: |
-        COMPOSE_PROJECT_NAME=bookshelf docker compose build api
-        docker tag bookshelf-api ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:${{ github.sha }}
-        docker tag bookshelf-api ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest
+        DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} docker compose build api
+        docker tag ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:${{ github.sha }}
 
     - name: Run Trivy Vulnerability Scanner
       uses: aquasecurity/trivy-action@master
