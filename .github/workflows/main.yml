@@ -44,11 +44,11 @@ jobs:
 
     - name: Run Migrations and Tests
       run: |
-        docker compose exec api sh -c "uv run python manage.py migrate contenttypes && \
-                                       uv run python manage.py migrate auth && \
-                                       uv run python manage.py migrate --fake accounts 0007 && \
-                                       uv run python manage.py migrate --fake accounts 0008 && \
-                                       uv run python manage.py migrate && \
+        docker compose exec api sh -c "uv run python manage.py migrate contenttypes --no-input && \
+                                       uv run python manage.py migrate auth --no-input && \
+                                       uv run python manage.py migrate --fake accounts 0007 --no-input && \
+                                       uv run python manage.py migrate --fake accounts 0008 --no-input && \
+                                       uv run python manage.py migrate --no-input && \
                                        uv run pytest"
 
     - name: Shutdown
@@ -128,9 +128,9 @@ jobs:
             docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest
             docker compose up -d
-            docker compose exec -T api sh -c "uv run python manage.py migrate contenttypes && \
-                                              uv run python manage.py migrate auth && \
-                                              uv run python manage.py migrate --fake accounts 0007 && \
-                                              uv run python manage.py migrate --fake accounts 0008 && \
+            docker compose exec -T api sh -c "uv run python manage.py migrate contenttypes --no-input && \
+                                              uv run python manage.py migrate auth --no-input && \
+                                              uv run python manage.py migrate --fake accounts 0007 --no-input && \
+                                              uv run python manage.py migrate --fake accounts 0008 --no-input && \
                                               uv run python manage.py migrate --no-input"
             docker compose exec -T api uv run python manage.py collectstatic --no-input

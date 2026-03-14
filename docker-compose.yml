@@ -35,14 +35,12 @@ services:
       - CELERY_RESULT_BACKEND=${DOCKER_CELERY_RESULT_BACKEND}
       - DJANGO_SETTINGS_MODULE=config.settings.dev
       - DEBUG=True
-    ports:
-      - "${DOCKER_API_PORT}:8000"
     command: >
-      sh -c "uv run python manage.py migrate contenttypes &&
-             uv run python manage.py migrate auth &&
-             uv run python manage.py migrate --fake accounts 0007 &&
-             uv run python manage.py migrate --fake accounts 0008 &&
-             uv run python manage.py migrate &&
+      sh -c "uv run python manage.py migrate contenttypes --no-input &&
+             uv run python manage.py migrate auth --no-input &&
+             uv run python manage.py migrate --fake accounts 0007 --no-input &&
+             uv run python manage.py migrate --fake accounts 0008 --no-input &&
+             uv run python manage.py migrate --no-input &&
              uv run python manage.py runserver 0.0.0.0:8000"
 
   worker:
