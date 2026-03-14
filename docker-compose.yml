@@ -26,9 +26,7 @@ services:
       - redis
     env_file:
       - .env
-    volumes:
-      - .:/app
-      - /app/.venv
+    # Removed volumes for production reliability. Image now contains all code.
     environment:
       - DATABASE_URL=${DOCKER_DATABASE_URL}
       - REDIS_URL=${DOCKER_REDIS_URL}
@@ -51,9 +49,7 @@ services:
       - redis
     env_file:
       - .env
-    volumes:
-      - .:/app
-      - /app/.venv
+    # Removed volumes for production reliability. Image now contains all code.
     environment:
       - DATABASE_URL=${DOCKER_DATABASE_URL}
       - REDIS_URL=${DOCKER_REDIS_URL}
@@ -71,9 +67,7 @@ services:
       - redis
     env_file:
       - .env
-    volumes:
-      - .:/app
-      - /app/.venv
+    # Removed volumes for production reliability. Image now contains all code.
     environment:
       - DATABASE_URL=${DOCKER_DATABASE_URL}
       - REDIS_URL=${DOCKER_REDIS_URL}
