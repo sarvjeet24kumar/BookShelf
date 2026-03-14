@@ -2,42 +2,47 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ development ]
+    branches: [ feat/test-cicd ]
   pull_request:
-    branches: [ development ]
+    branches: [ feat/test-cicd ]
 
 jobs:
+  # ──────────────────────────────────────────────
+  # Stage 1: Run Tests
+  # ──────────────────────────────────────────────
   test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
 
-    - name: Create dummy .env
+    - name: Create test .env
       run: |
-        echo "DOCKER_POSTGRES_USER=postgres" >> .env
-        echo "DOCKER_POSTGRES_PASSWORD=postgres" >> .env
-        echo "DOCKER_POSTGRES_DB=BookShelf" >> .env
-        echo "DOCKER_DB_PORT=5433" >> .env
-        echo "DOCKER_REDIS_PORT=6379" >> .env
-        echo "DOCKER_API_PORT=8000" >> .env
-        echo "DOCKER_DATABASE_URL=postgres://postgres:postgres@db:5432/BookShelf" >> .env
-        echo "DOCKER_REDIS_URL=redis://redis:6379/1" >> .env
-        echo "DOCKER_CELERY_BROKER_URL=redis://redis:6379/0" >> .env
-        echo "DOCKER_CELERY_RESULT_BACKEND=redis://redis:6379/0" >> .env
-        echo "SECRET_KEY=django-insecure-test-key" >> .env
-        echo "OTP_EXPIRY_MINUTES=5" >> .env
-        echo "USER_DATA_RETENTION_DAYS=30" >> .env
-        echo "UNVERIFIED_USER_CLEANUP_HOURS=24" >> .env
-        echo "SITE_URL=http://localhost:8000" >> .env
-        echo "EMAIL_HOST_USER=test@example.com" >> .env
-        echo "EMAIL_HOST_PASSWORD=test" >> .env
-        echo "JWT_ACCESS_TOKEN_MINUTES=120" >> .env
-        echo "JWT_REFRESH_TOKEN_DAYS=7" >> .env
+        cat <<EOF > .env
+        DOCKER_POSTGRES_USER=postgres
+        DOCKER_POSTGRES_PASSWORD=postgres
+        DOCKER_POSTGRES_DB=BookShelf
+        DOCKER_DB_PORT=5433
+        DOCKER_REDIS_PORT=6379
+        DOCKER_API_PORT=8000
+        DOCKER_DATABASE_URL=postgres://postgres:postgres@db:5432/BookShelf
+        DOCKER_REDIS_URL=redis://redis:6379/1
+        DOCKER_CELERY_BROKER_URL=redis://redis:6379/0
+        DOCKER_CELERY_RESULT_BACKEND=redis://redis:6379/0
+        SECRET_KEY=django-insecure-test-key
+        OTP_EXPIRY_MINUTES=5
+        USER_DATA_RETENTION_DAYS=30
+        UNVERIFIED_USER_CLEANUP_HOURS=24
+        SITE_URL=http://localhost:8000
+        EMAIL_HOST_USER=test@example.com
+        EMAIL_HOST_PASSWORD=test
+        JWT_ACCESS_TOKEN_MINUTES=120
+        JWT_REFRESH_TOKEN_DAYS=7
+        EOF
 
-    - name: Set up Docker Compose
+    - name: Start Docker Compose
       run: |
         docker compose up -d --build
-        # Wait for database to be ready
+        sleep 10
         docker compose exec db pg_isready -h localhost -U postgres
 
     - name: Run Migrations and Tests
@@ -51,10 +56,71 @@ jobs:
       if: always()
       run: docker compose down
 
-  deploy:
+  # ──────────────────────────────────────────────
+  # Stage 2: Build, Scan & Push Docker Image
+  # ──────────────────────────────────────────────
+  build-scan-push:
     needs: test
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+    if: github.event_name == 'push'
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Create build .env
+      run: |
+        cat <<EOF > .env
+        DOCKER_POSTGRES_USER=postgres
+        DOCKER_POSTGRES_PASSWORD=postgres
+        DOCKER_POSTGRES_DB=BookShelf
+        DOCKER_DB_PORT=5433
+        DOCKER_REDIS_PORT=6379
+        DOCKER_API_PORT=8000
+        DOCKER_DATABASE_URL=postgres://postgres:postgres@db:5432/BookShelf
+        DOCKER_REDIS_URL=redis://redis:6379/1
+        DOCKER_CELERY_BROKER_URL=redis://redis:6379/0
+        DOCKER_CELERY_RESULT_BACKEND=redis://redis:6379/0
+        SECRET_KEY=django-insecure-test-key
+        OTP_EXPIRY_MINUTES=5
+        USER_DATA_RETENTION_DAYS=30
+        UNVERIFIED_USER_CLEANUP_HOURS=24
+        SITE_URL=http://localhost:8000
+        EMAIL_HOST_USER=test@example.com
+        EMAIL_HOST_PASSWORD=test
+        JWT_ACCESS_TOKEN_MINUTES=120
+        JWT_REFRESH_TOKEN_DAYS=7
+        EOF
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build Docker Image via Docker Compose
+      run: |
+        docker compose build api
+        docker tag bookshelf2-api ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:${{ github.sha }}
+        docker tag bookshelf2-api ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest
+
+    - name: Run Trivy Vulnerability Scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:${{ github.sha }}
+        format: 'table'
+        exit-code: '1'
+        severity: 'CRITICAL'
+
+    - name: Push to Docker Hub
+      run: |
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:${{ github.sha }}
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest
+
+  # ──────────────────────────────────────────────
+  # Stage 3: Deploy to EC2
+  # ──────────────────────────────────────────────
+  deploy:
+    needs: build-scan-push
+    runs-on: ubuntu-latest
     steps:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.7
@@ -64,7 +130,11 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ubuntu/django-app
-            git pull origin development
-            docker compose up -d --build
-            docker compose exec api python manage.py migrate --no-input
-            docker compose exec api python manage.py collectstatic --no-input
+            git pull origin feat/test-cicd
+            docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest
+            docker compose up -d
+            docker compose exec -T api sh -c "uv run python manage.py migrate --fake accounts 0007 && \
+                                              uv run python manage.py migrate --fake accounts 0008 && \
+                                              uv run python manage.py migrate --no-input"
+            docker compose exec -T api uv run python manage.py collectstatic --no-input
