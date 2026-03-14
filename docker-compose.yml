@@ -12,14 +12,14 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   redis:
-    build: .
-    image: ${DOCKERHUB_USERNAME:-sarvjeet24kumar}/bookshelf:latest
+    image: redis:7-alpine
     container_name: bookshelf-redis
     ports:
       - "${DOCKER_REDIS_PORT}:6379"
 
   api:
     build: .
+    image: ${DOCKER_IMAGE:-bookshelf-api}
     container_name: bookshelf-api
     depends_on:
       - db
@@ -44,6 +44,7 @@ services:
 
   worker:
     build: .
+    image: ${DOCKER_IMAGE:-bookshelf-api}
     container_name: bookshelf-worker
     depends_on:
       - db
@@ -63,6 +64,7 @@ services:
 
   beat:
     build: .
+    image: ${DOCKER_IMAGE:-bookshelf-api}
     container_name: bookshelf-beat
     depends_on:
       - db

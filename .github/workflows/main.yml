@@ -91,7 +91,7 @@ jobs:
 
     - name: Build Docker Image via Docker Compose
       run: |
-        DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} docker compose build api
+        DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest docker compose build api
         docker tag ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:${{ github.sha }}
 
     - name: Run Trivy Vulnerability Scanner
