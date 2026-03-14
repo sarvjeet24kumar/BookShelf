@@ -125,5 +125,3 @@ jobs:
             docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest
             DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest docker compose up -d --force-recreate
-            DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest docker compose exec -T api uv run python manage.py migrate --no-input
-            DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest docker compose exec -T api uv run python manage.py collectstatic --no-input
