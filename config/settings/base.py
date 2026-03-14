@@ -1,3 +1,4 @@
+# BookShelf 2 Base Settings
 import os
 import environ
 from pathlib import Path

@@ -1,4 +1,5 @@
 services:
+# Database Configuration
   db:
     image: postgres:15-alpine
     container_name: bookshelf-db
