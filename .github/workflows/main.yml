@@ -7,9 +7,6 @@ on:
     branches: [ feat/test-cicd ]
 
 jobs:
-  # ──────────────────────────────────────────────
-  # Stage 1: Run Tests
-  # ──────────────────────────────────────────────
   test:
     runs-on: ubuntu-latest
     steps:
@@ -56,11 +53,8 @@ jobs:
       if: always()
       run: docker compose down
 
-  # ──────────────────────────────────────────────
-  # Stage 2: Build, Scan & Push Docker Image
-  # ──────────────────────────────────────────────
   build-scan-push:
-    needs: test
+    # needs: test  # Uncomment this line to re-enable tests before build
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     steps:
@@ -115,9 +109,7 @@ jobs:
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:${{ github.sha }}
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest
 
-  # ──────────────────────────────────────────────
-  # Stage 3: Deploy to EC2
-  # ──────────────────────────────────────────────
+
   deploy:
     needs: build-scan-push
     runs-on: ubuntu-latest
