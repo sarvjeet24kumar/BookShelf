@@ -1,7 +1,7 @@
 from .base import *
 
 DEBUG = env("DEBUG")
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*", "bookshelf.isroot.in"])
 DATABASES = {"default": env.db()}
 
 # Redis Cache Configuration
