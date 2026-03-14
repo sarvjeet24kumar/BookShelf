@@ -78,5 +78,5 @@ class TenantAwareUserManager(UserManager):
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
         extra_fields.setdefault('is_email_verified', True)
-        extra_fields.setdefault('role', UserRole.SUPERADMIN)
+        extra_fields.setdefault('role', UserRole.SUPER_ADMIN)
         return self._create_user(username, email, password, **extra_fields)

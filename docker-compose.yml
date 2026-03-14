@@ -1,0 +1,85 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: bookshelf-db
+    environment:
+      POSTGRES_USER: ${DOCKER_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${DOCKER_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${DOCKER_POSTGRES_DB}
+    ports:
+      - "${DOCKER_DB_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: bookshelf-redis
+    ports:
+      - "${DOCKER_REDIS_PORT}:6379"
+
+  api:
+    build: .
+    container_name: bookshelf-api
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - /app/.venv
+    environment:
+      - DATABASE_URL=${DOCKER_DATABASE_URL}
+      - REDIS_URL=${DOCKER_REDIS_URL}
+      - CELERY_BROKER_URL=${DOCKER_CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${DOCKER_CELERY_RESULT_BACKEND}
+      - DJANGO_SETTINGS_MODULE=config.settings.dev
+      - DEBUG=True
+    ports:
+      - "${DOCKER_API_PORT}:8000"
+    command: >
+      sh -c "uv run python manage.py migrate --fake accounts 0007 &&
+             uv run python manage.py migrate --fake accounts 0008 &&
+             uv run python manage.py migrate &&
+             uv run python manage.py runserver 0.0.0.0:8000"
+
+  worker:
+    build: .
+    container_name: bookshelf-worker
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - /app/.venv
+    environment:
+      - DATABASE_URL=${DOCKER_DATABASE_URL}
+      - REDIS_URL=${DOCKER_REDIS_URL}
+      - CELERY_BROKER_URL=${DOCKER_CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${DOCKER_CELERY_RESULT_BACKEND}
+      - DJANGO_SETTINGS_MODULE=config.settings.dev
+    command: uv run celery -A config worker --loglevel=info
+
+  beat:
+    build: .
+    container_name: bookshelf-beat
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - /app/.venv
+    environment:
+      - DATABASE_URL=${DOCKER_DATABASE_URL}
+      - REDIS_URL=${DOCKER_REDIS_URL}
+      - CELERY_BROKER_URL=${DOCKER_CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${DOCKER_CELERY_RESULT_BACKEND}
+      - DJANGO_SETTINGS_MODULE=config.settings.dev
+    command: uv run celery -A config beat --loglevel=info
+
+volumes:
+  postgres_data:

@@ -1,0 +1,14 @@
+.git
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.coverage
+htmlcov
+.vscode
+.DS_Store
+*.swp
+*.bak
+*.log
+celerybeat-schedule*

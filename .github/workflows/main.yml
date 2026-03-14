@@ -1,0 +1,70 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ development ]
+  pull_request:
+    branches: [ development ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Create dummy .env
+      run: |
+        echo "DOCKER_POSTGRES_USER=postgres" >> .env
+        echo "DOCKER_POSTGRES_PASSWORD=postgres" >> .env
+        echo "DOCKER_POSTGRES_DB=BookShelf" >> .env
+        echo "DOCKER_DB_PORT=5433" >> .env
+        echo "DOCKER_REDIS_PORT=6379" >> .env
+        echo "DOCKER_API_PORT=8000" >> .env
+        echo "DOCKER_DATABASE_URL=postgres://postgres:postgres@db:5432/BookShelf" >> .env
+        echo "DOCKER_REDIS_URL=redis://redis:6379/1" >> .env
+        echo "DOCKER_CELERY_BROKER_URL=redis://redis:6379/0" >> .env
+        echo "DOCKER_CELERY_RESULT_BACKEND=redis://redis:6379/0" >> .env
+        echo "SECRET_KEY=django-insecure-test-key" >> .env
+        echo "OTP_EXPIRY_MINUTES=5" >> .env
+        echo "USER_DATA_RETENTION_DAYS=30" >> .env
+        echo "UNVERIFIED_USER_CLEANUP_HOURS=24" >> .env
+        echo "SITE_URL=http://localhost:8000" >> .env
+        echo "EMAIL_HOST_USER=test@example.com" >> .env
+        echo "EMAIL_HOST_PASSWORD=test" >> .env
+        echo "JWT_ACCESS_TOKEN_MINUTES=120" >> .env
+        echo "JWT_REFRESH_TOKEN_DAYS=7" >> .env
+
+    - name: Set up Docker Compose
+      run: |
+        docker compose up -d --build
+        # Wait for database to be ready
+        docker compose exec db pg_isready -h localhost -U postgres
+
+    - name: Run Migrations and Tests
+      run: |
+        docker compose exec api sh -c "uv run python manage.py migrate --fake accounts 0007 && \
+                                       uv run python manage.py migrate --fake accounts 0008 && \
+                                       uv run python manage.py migrate && \
+                                       uv run pytest"
+
+    - name: Shutdown
+      if: always()
+      run: docker compose down
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/django-app
+            git pull origin development
+            docker compose up -d --build
+            docker compose exec api python manage.py migrate --no-input
+            docker compose exec api python manage.py collectstatic --no-input
