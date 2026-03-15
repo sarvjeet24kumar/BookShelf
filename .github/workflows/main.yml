@@ -67,7 +67,10 @@ jobs:
         run: uv sync --all-groups
 
       - name: Run Migrations
-        run: uv run python manage.py migrate --no-input
+        run: |
+          uv run python manage.py migrate --no-input accounts 0006
+          uv run python manage.py migrate --no-input --fake accounts 0007
+          uv run python manage.py migrate --no-input
 
       - name: Run Tests
         run: uv run pytest
