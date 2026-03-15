@@ -108,37 +108,31 @@ def custom_exception_handler(exc, context):
 
     return response
 
-def handler404(request, exception, template_name="404.html"):
-    """Custom 404 handler - returns JSON for API routes."""
-    
-    if request.path.startswith("/api/"):
-        return JsonResponse(
-            {
-                "success": False,
-                "error": {
-                    "code": "ENDPOINT_NOT_FOUND",
-                    "message": "API endpoint does not exist",
-                }
-            },
-            status=404
-        )
-    return render(request, template_name, status=404)
+def handler404(request, exception):
+    """API-only 404 handler."""
+    return JsonResponse(
+        {
+            "success": False,
+            "error": {
+                "code": "ENDPOINT_NOT_FOUND",
+                "message": "API endpoint does not exist",
+            }
+        },
+        status=404,
+    )
 
 
-def handler500(request, template_name="500.html"):
-    """Custom 500 handler - returns JSON for API routes."""
-    
+def handler500(request):
+    """API-only 500 handler."""
     logger.exception("Internal server error at %s", request.path)
-    
-    if request.path.startswith("/api/"):
-        return JsonResponse(
-            {
-                "success": False,
-                "error": {
-                    "code": "SERVER_ERROR",
-                    "message": "Internal server error",
-                }
-            },
-            status=500
-        )
-    return render(request, template_name, status=500)
+
+    return JsonResponse(
+        {
+            "success": False,
+            "error": {
+                "code": "SERVER_ERROR",
+                "message": "Internal server error",
+            }
+        },
+        status=500,
+    )
