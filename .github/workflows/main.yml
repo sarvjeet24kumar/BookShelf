@@ -49,6 +49,7 @@ jobs:
       SITE_URL: http://localhost:8000
       EMAIL_HOST_USER: test@example.com
       EMAIL_HOST_PASSWORD: test
+      SUPERADMIN_PASSWORD: test_password123
       JWT_ACCESS_TOKEN_MINUTES: "120"
       JWT_REFRESH_TOKEN_DAYS: "7"
 
@@ -67,7 +68,13 @@ jobs:
         run: uv sync --all-groups
 
       - name: Run Migrations
-        run: uv run python manage.py migrate --no-input
+        run: |
+          uv run python manage.py migrate --no-input accounts 0006
+          uv run python manage.py migrate --no-input --fake accounts 0007
+          uv run python manage.py migrate --no-input
+
+      - name: Create Superadmin
+        run: uv run python manage.py create_superadmin
 
       - name: Run Tests
         run: uv run pytest
