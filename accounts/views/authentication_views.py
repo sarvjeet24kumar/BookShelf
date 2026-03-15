@@ -61,7 +61,7 @@ class LoginView(APIView):
 
         return Response(
             {
-                "detail": "OTP sent to your email. Please verify to complete login.",
+                "detail": "OTP sent to your email. Please verify to login.",
             }
         )
 
