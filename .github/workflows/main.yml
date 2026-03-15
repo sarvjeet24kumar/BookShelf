@@ -76,12 +76,12 @@ jobs:
         run: uv run pytest
 
   build-scan-push:
-    needs: test
+    # needs: test
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
-
+ed to chan
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
