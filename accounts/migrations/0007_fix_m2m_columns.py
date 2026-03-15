@@ -10,14 +10,52 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-     
         migrations.RunSQL(
-            sql="ALTER TABLE user_groups RENAME COLUMN users_id TO user_id;",
-            reverse_sql="ALTER TABLE user_groups RENAME COLUMN user_id TO users_id;",
+            sql="""
+            DO $$ 
+            BEGIN 
+                BEGIN 
+                    ALTER TABLE user_groups RENAME COLUMN users_id TO user_id; 
+                EXCEPTION 
+                    WHEN undefined_column THEN 
+                        NULL; 
+                END; 
+            END $$;
+            """,
+            reverse_sql="""
+            DO $$ 
+            BEGIN 
+                BEGIN 
+                    ALTER TABLE user_groups RENAME COLUMN user_id TO users_id; 
+                EXCEPTION 
+                    WHEN undefined_column THEN 
+                        NULL; 
+                END; 
+            END $$;
+            """,
         ),
-        
         migrations.RunSQL(
-            sql="ALTER TABLE user_user_permissions RENAME COLUMN users_id TO user_id;",
-            reverse_sql="ALTER TABLE user_user_permissions RENAME COLUMN user_id TO users_id;",
+            sql="""
+            DO $$ 
+            BEGIN 
+                BEGIN 
+                    ALTER TABLE user_user_permissions RENAME COLUMN users_id TO user_id; 
+                EXCEPTION 
+                    WHEN undefined_column THEN 
+                        NULL; 
+                END; 
+            END $$;
+            """,
+            reverse_sql="""
+            DO $$ 
+            BEGIN 
+                BEGIN 
+                    ALTER TABLE user_user_permissions RENAME COLUMN user_id TO users_id; 
+                EXCEPTION 
+                    WHEN undefined_column THEN 
+                        NULL; 
+                END; 
+            END $$;
+            """,
         ),
     ]
