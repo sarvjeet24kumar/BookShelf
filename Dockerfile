@@ -28,7 +28,7 @@ COPY . .
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV DJANGO_SETTINGS_MODULE=config.settings.dev
+ENV DJANGO_SETTINGS_MODULE=config.settings.prod
 
 # Collect static files during build (baked into image)
 RUN SECRET_KEY=build-only-key \
