@@ -27,9 +27,7 @@ services:
       - "8000"
 
   nginx:
-    build:
-      context: .
-      dockerfile: ./nginx/Dockerfile
+    image: nginx:latest
     container_name: bookshelf-nginx
     depends_on:
       - api
