@@ -27,7 +27,8 @@ services:
       - "8000"
 
   nginx:
-    image: nginx:latest
+    build:
+      context: ./nginx
     container_name: bookshelf-nginx
     depends_on:
       - api
@@ -70,6 +71,18 @@ services:
       - REDIS_URL=${DOCKER_REDIS_URL}
       - CELERY_BROKER_URL=${DOCKER_CELERY_BROKER_URL}
       - CELERY_RESULT_BACKEND=${DOCKER_CELERY_RESULT_BACKEND}
+      - TZ=Asia/Kolkata
+
+  locust:
+    build: .
+    image: ${DOCKER_IMAGE:-bookshelf-api}
+    container_name: bookshelf-locust
+    depends_on:
+      - api
+    command: ["uv", "run", "locust", "-f", "tests/performance/locustfile.py", "--host", "http://api:8000"]
+    ports:
+      - "8089:8089"
+    environment:
       - TZ=Asia/Kolkata
 
 volumes:
