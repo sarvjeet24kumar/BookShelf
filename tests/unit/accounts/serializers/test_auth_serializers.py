@@ -71,8 +71,8 @@ class TestChangePasswordSerializerUnit:
     def test_mismatched_new_passwords(self, fake_data):
         """Test that mismatched new passwords raise ValidationError."""
         data = {
-            "current_password": fake_data.password(),
-            "new_password": fake_data.password(),
+            "current_password": "OldPassword123!",
+            "new_password": "NewPassword123!",
             "confirm_password": "Mismatched@123"
         }
         serializer = ChangePasswordSerializer(data=data)
@@ -81,7 +81,8 @@ class TestChangePasswordSerializerUnit:
 
     def test_new_password_same_as_current(self, fake_data):
         """Test that new password same as current raises ValidationError."""
-        password = fake_data.password(special_chars=True)
+        # Ensure password has a special char from the restricted set [!@#$%^&*]
+        password = "Password123!"
         data = {
             "current_password": password,
             "new_password": password,
