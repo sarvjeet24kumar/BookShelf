@@ -49,9 +49,7 @@ class BookView(APIView):
                 )
 
         if is_admin:
-            queryset = Book.all_objects.filter(
-                tenant_id=user.tenant_id
-            )
+            queryset = Book.all_objects.filter(tenant_id=user.tenant_id)
         else:
             queryset = Book.objects.filter(
                 Q(request_status=RequestStatus.APPROVED) | Q(created_by=user)
@@ -146,9 +144,7 @@ class BookDetailView(APIView):
         is_pending = book.request_status == RequestStatus.PENDING
 
         if not (is_admin or (is_owner and is_pending)):
-            logger.warning(
-                "Blocked: Unauthorized update attempt"
-            )
+            logger.warning("Blocked: Unauthorized update attempt")
             if not is_admin and is_owner and not is_pending:
                 raise PermissionDenied(
                     "Cannot update book once it is approved/rejected."
@@ -170,18 +166,14 @@ class BookDetailView(APIView):
 
     def delete(self, request, id):
         if request.user.role != UserRole.ADMIN:
-            logger.warning(
-                "Blocked: Non-admin tried to delete book"
-            )
+            logger.warning("Blocked: Non-admin tried to delete book")
             raise PermissionDenied("Only admins can delete books.")
 
         book = self.get_object(id, request.user)
         active_user_books = UserBook.objects.filter(book=book).exists()
 
         if active_user_books:
-            logger.warning(
-                "Blocked: Cannot delete book in user libraries"
-            )
+            logger.warning("Blocked: Cannot delete book in user libraries")
             return Response(
                 {
                     "error": "Cannot delete this book. It exists in one or more user libraries. "
@@ -193,8 +185,6 @@ class BookDetailView(APIView):
 
         book.book_genres.update(deleted_at=book.deleted_at)
 
-        logger.info(
-            "Book soft-deleted by admin"
-        )
+        logger.info("Book soft-deleted by admin")
 
         return Response(status=status.HTTP_204_NO_CONTENT)

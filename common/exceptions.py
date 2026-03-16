@@ -19,7 +19,6 @@ from rest_framework.exceptions import (
 from django.http import JsonResponse
 from django.shortcuts import render
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -35,7 +34,6 @@ def custom_exception_handler(exc, context):
 
     if isinstance(exc, ObjectDoesNotExist):
         exc = NotFound()
-        
 
     if response is None or response.status_code >= 500:
         logger.exception(
@@ -51,11 +49,10 @@ def custom_exception_handler(exc, context):
                 "error": {
                     "code": "SERVER_ERROR",
                     "message": "Internal server error",
-                }
+                },
             },
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-
 
     error = {
         "code": response.status_code,
@@ -108,6 +105,7 @@ def custom_exception_handler(exc, context):
 
     return response
 
+
 def handler404(request, exception):
     """API-only 404 handler."""
     return JsonResponse(
@@ -116,7 +114,7 @@ def handler404(request, exception):
             "error": {
                 "code": "ENDPOINT_NOT_FOUND",
                 "message": "API endpoint does not exist",
-            }
+            },
         },
         status=404,
     )
@@ -132,7 +130,7 @@ def handler500(request):
             "error": {
                 "code": "SERVER_ERROR",
                 "message": "Internal server error",
-            }
+            },
         },
         status=500,
     )

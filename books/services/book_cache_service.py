@@ -13,7 +13,7 @@ CACHE_PREFIX = "tenant"
 class BookCacheService:
     """
     Service for caching tenant book lists in Redis.
-    
+
     """
 
     @staticmethod
@@ -57,9 +57,7 @@ class BookCacheService:
         books_data = serializer.data
 
         cache.set(cache_key, books_data, timeout=CACHE_TTL)
-        logger.info(
-            f"Cached {len(books_data)} books (TTL={CACHE_TTL}s)"
-        )
+        logger.info(f"Cached {len(books_data)} books (TTL={CACHE_TTL}s)")
 
     @staticmethod
     def invalidate_tenant_books(tenant_id):

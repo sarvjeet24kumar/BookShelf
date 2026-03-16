@@ -44,9 +44,7 @@ class SignupSerializer(serializers.ModelSerializer):
         """Validate username is not already taken."""
         username = value.lower()
         if User.all_objects.filter(username=username).exists():
-            raise serializers.ValidationError(
-                "user with this username already exists."
-            )
+            raise serializers.ValidationError("user with this username already exists.")
         return username
 
     def validate_email(self, value):
@@ -79,7 +77,9 @@ class LoginSerializer(serializers.Serializer):
         password = attrs.get("password", "").strip()
 
         if email and username:
-            raise serializers.ValidationError("Provide either email or username, not both.")
+            raise serializers.ValidationError(
+                "Provide either email or username, not both."
+            )
         if not email and not username:
             raise serializers.ValidationError("Email or username is required.")
         if not password:
@@ -93,26 +93,36 @@ class LoginSerializer(serializers.Serializer):
 
 class ChangePasswordSerializer(serializers.Serializer):
     """Serializer for changing password for authenticated users."""
-    
+
     current_password = serializers.CharField(write_only=True, required=True)
-    new_password = serializers.CharField(write_only=True, required=True, min_length=MIN_PASSWORD_LENGTH)
-    confirm_password = serializers.CharField(write_only=True, required=True, min_length=MIN_PASSWORD_LENGTH)
-    
+    new_password = serializers.CharField(
+        write_only=True, required=True, min_length=MIN_PASSWORD_LENGTH
+    )
+    confirm_password = serializers.CharField(
+        write_only=True, required=True, min_length=MIN_PASSWORD_LENGTH
+    )
+
     def validate_new_password(self, value):
         """Validate new password meets requirements."""
         validate_password(value.strip())
         return value.strip()
-    
+
     def validate(self, attrs):
         """Validate passwords match and new password is different from current."""
-        current_password = attrs.get('current_password', '').strip()
-        new_password = attrs.get('new_password', '').strip()
-        confirm_password = attrs.get('confirm_password', '').strip()
-        
+        current_password = attrs.get("current_password", "").strip()
+        new_password = attrs.get("new_password", "").strip()
+        confirm_password = attrs.get("confirm_password", "").strip()
+
         if new_password != confirm_password:
-            raise serializers.ValidationError({"confirm_password": "New passwords don't match."})
-        
+            raise serializers.ValidationError(
+                {"confirm_password": "New passwords don't match."}
+            )
+
         if current_password == new_password:
-            raise serializers.ValidationError({"new_password": "New password must be different from current password."})
-        
+            raise serializers.ValidationError(
+                {
+                    "new_password": "New password must be different from current password."
+                }
+            )
+
         return attrs

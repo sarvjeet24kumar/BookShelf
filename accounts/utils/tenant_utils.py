@@ -9,11 +9,11 @@ def get_tenant_from_header(request, required=True):
 
     """
     tenant_id = request.headers.get("Tenant-ID")
-    
+
     if not tenant_id:
         if required:
             raise DRFValidationError("Tenant-ID header is required.")
-        return None 
+        return None
 
     try:
         return Tenant.objects.get(id=tenant_id, is_active=True, deleted_at__isnull=True)

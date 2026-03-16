@@ -3,7 +3,7 @@ from django.core.validators import RegexValidator, MinLengthValidator
 from rest_framework.serializers import ValidationError
 from django.utils import timezone
 
-MIN_PUBLISHED_YEAR = 1000 
+MIN_PUBLISHED_YEAR = 1000
 
 
 username_validator = RegexValidator(

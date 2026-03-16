@@ -65,7 +65,13 @@ class VerifyPaymentView(APIView):
 
             # If already processed, just save the signature and return
             if payment.status in [PaymentStatus.VERIFIED, PaymentStatus.ACTIVATED]:
-                payment.save(update_fields=["razorpay_payment_id", "razorpay_signature", "updated_at"])
+                payment.save(
+                    update_fields=[
+                        "razorpay_payment_id",
+                        "razorpay_signature",
+                        "updated_at",
+                    ]
+                )
                 logger.info("Payment already verified. Updated signature metadata.")
                 return Response(
                     {

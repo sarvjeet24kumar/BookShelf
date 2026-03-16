@@ -7,24 +7,41 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0003_remove_email_verified'),
-        ('tenants', '0001_initial'),
+        ("accounts", "0003_remove_email_verified"),
+        ("tenants", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='is_email_verified',
-            field=models.BooleanField(default=False, help_text="Whether user's email has been verified"),
+            model_name="user",
+            name="is_email_verified",
+            field=models.BooleanField(
+                default=False, help_text="Whether user's email has been verified"
+            ),
         ),
         migrations.AddField(
-            model_name='user',
-            name='tenant',
-            field=models.ForeignKey(blank=True, help_text='Tenant this user belongs to (NULL for Super Admin)', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='users', to='tenants.tenant'),
+            model_name="user",
+            name="tenant",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="Tenant this user belongs to (NULL for Super Admin)",
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="users",
+                to="tenants.tenant",
+            ),
         ),
         migrations.AlterField(
-            model_name='user',
-            name='role',
-            field=models.CharField(choices=[('USER', 'User'), ('ADMIN', 'Admin'), ('SUPER_ADMIN', 'Super Admin')], default='USER', max_length=20),
+            model_name="user",
+            name="role",
+            field=models.CharField(
+                choices=[
+                    ("USER", "User"),
+                    ("ADMIN", "Admin"),
+                    ("SUPER_ADMIN", "Super Admin"),
+                ],
+                default="USER",
+                max_length=20,
+            ),
         ),
     ]

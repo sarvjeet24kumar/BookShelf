@@ -10,7 +10,6 @@ from accounts.services import email_verification_service
 from accounts.utils.tenant_utils import get_tenant_from_header
 from accounts.utils.user_lookup import find_user_with_validation
 
-
 logger = logging.getLogger(__name__)
 User = get_user_model()
 

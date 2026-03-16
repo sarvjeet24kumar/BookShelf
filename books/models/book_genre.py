@@ -14,10 +14,7 @@ class BookGenre(BaseModel):
     class Meta:
         db_table = "book_genres"
         constraints = [
-            models.UniqueConstraint(
-                fields=["book", "genre"],
-                name="unique_book_genre"
-            )
+            models.UniqueConstraint(fields=["book", "genre"], name="unique_book_genre")
         ]
 
     def __str__(self):

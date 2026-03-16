@@ -7,19 +7,27 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('books', '0005_assign_default_tenant'),
-        ('tenants', '0001_initial'),
+        ("books", "0005_assign_default_tenant"),
+        ("tenants", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='book',
-            name='tenant',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='books', to='tenants.tenant'),
+            model_name="book",
+            name="tenant",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="books",
+                to="tenants.tenant",
+            ),
         ),
         migrations.AlterField(
-            model_name='genre',
-            name='tenant',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='genres', to='tenants.tenant'),
+            model_name="genre",
+            name="tenant",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="genres",
+                to="tenants.tenant",
+            ),
         ),
     ]

@@ -25,14 +25,6 @@ class GenreListView(APIView):
 
     permission_classes = [IsTenantMember]
 
-    def get(self, request):
-        if request.user.role == UserRole.ADMIN:
-            queryset = Genre.all_objects.all().order_by("name")
-        else:
-            queryset = Genre.objects.all().order_by("name")
-
-        paginator = CommonPagination()
-        paginated_queryset = paginator.paginate_queryset(queryset, request)
 
     def get(self, request):
         if request.user.role == UserRole.ADMIN:

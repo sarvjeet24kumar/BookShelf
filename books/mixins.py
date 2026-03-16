@@ -1,6 +1,7 @@
 """
 Mixins for user book views.
 """
+
 from rest_framework.exceptions import NotFound, PermissionDenied
 from django.contrib.auth import get_user_model
 from common.enums import UserRole
@@ -13,7 +14,7 @@ class UserLibraryPermissionMixin:
     Mixin for checking user library access permissions.
     Reusable across views that need to validate library access.
     """
-    
+
     def check_permission(self, request, user_id):
         """
         Check if request.user has permission to access target user's library.

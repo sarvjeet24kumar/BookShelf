@@ -31,7 +31,7 @@ class UserBookListSerializer(serializers.ModelSerializer):
         """Helper to get UserBook for current user or target user."""
         if not hasattr(self, "_user_book_cache"):
             self._user_book_cache = {}
-        
+
         if book.id not in self._user_book_cache:
             # Use target_user if provided (for Admin viewing other user's library),
             # otherwise use request.user (for own library)
@@ -39,7 +39,7 @@ class UserBookListSerializer(serializers.ModelSerializer):
             self._user_book_cache[book.id] = UserBook.objects.filter(
                 user=user, book=book, deleted_at__isnull=True
             ).first()
-        
+
         return self._user_book_cache[book.id]
 
     def get_genres(self, book):
@@ -78,7 +78,6 @@ class UserBookAddSerializer(serializers.Serializer):
 
 
 class UserBookUpdateSerializer(serializers.Serializer):
-
     """Serializer for updating reading status in a user's library."""
 
     status = serializers.ChoiceField(

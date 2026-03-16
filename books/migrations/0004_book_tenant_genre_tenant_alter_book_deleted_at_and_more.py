@@ -10,58 +10,80 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('books', '0003_genre_deleted_at_genre_description_alter_book_author_and_more'),
-        ('tenants', '0001_initial'),
+        ("books", "0003_genre_deleted_at_genre_description_alter_book_author_and_more"),
+        ("tenants", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='book',
-            name='tenant',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='books', to='tenants.tenant'),
+            model_name="book",
+            name="tenant",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="books",
+                to="tenants.tenant",
+            ),
         ),
         migrations.AddField(
-            model_name='genre',
-            name='tenant',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='genres', to='tenants.tenant'),
+            model_name="genre",
+            name="tenant",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="genres",
+                to="tenants.tenant",
+            ),
         ),
         migrations.AlterField(
-            model_name='book',
-            name='deleted_at',
+            model_name="book",
+            name="deleted_at",
             field=models.DateTimeField(null=True),
         ),
         migrations.AlterField(
-            model_name='book',
-            name='isbn',
-            field=models.CharField(max_length=13, validators=[django.core.validators.MinLengthValidator(10), common.validators.isbn_validator]),
+            model_name="book",
+            name="isbn",
+            field=models.CharField(
+                max_length=13,
+                validators=[
+                    django.core.validators.MinLengthValidator(10),
+                    common.validators.isbn_validator,
+                ],
+            ),
         ),
         migrations.AlterField(
-            model_name='bookgenre',
-            name='deleted_at',
+            model_name="bookgenre",
+            name="deleted_at",
             field=models.DateTimeField(null=True),
         ),
         migrations.AlterField(
-            model_name='genre',
-            name='deleted_at',
+            model_name="genre",
+            name="deleted_at",
             field=models.DateTimeField(null=True),
         ),
         migrations.AlterField(
-            model_name='genre',
-            name='name',
+            model_name="genre",
+            name="name",
             field=models.CharField(max_length=100),
         ),
         migrations.AlterField(
-            model_name='userbook',
-            name='deleted_at',
+            model_name="userbook",
+            name="deleted_at",
             field=models.DateTimeField(null=True),
         ),
         migrations.AddConstraint(
-            model_name='book',
-            constraint=models.UniqueConstraint(fields=('tenant', 'isbn'), name='unique_tenant_isbn'),
+            model_name="book",
+            constraint=models.UniqueConstraint(
+                fields=("tenant", "isbn"), name="unique_tenant_isbn"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='genre',
-            constraint=models.UniqueConstraint(fields=('tenant', 'name'), name='unique_tenant_genre'),
+            model_name="genre",
+            constraint=models.UniqueConstraint(
+                fields=("tenant", "name"), name="unique_tenant_genre"
+            ),
         ),
     ]

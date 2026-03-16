@@ -7,39 +7,47 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('books', '0006_make_tenant_required'),
-        ('tenants', '0002_alter_tenant_deleted_at_alter_tenant_is_active_and_more'),
+        ("books", "0006_make_tenant_required"),
+        ("tenants", "0002_alter_tenant_deleted_at_alter_tenant_is_active_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='book',
-            name='deleted_at',
+            model_name="book",
+            name="deleted_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='book',
-            name='tenant',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='%(class)ss', to='tenants.tenant'),
+            model_name="book",
+            name="tenant",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="%(class)ss",
+                to="tenants.tenant",
+            ),
         ),
         migrations.AlterField(
-            model_name='bookgenre',
-            name='deleted_at',
+            model_name="bookgenre",
+            name="deleted_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='genre',
-            name='deleted_at',
+            model_name="genre",
+            name="deleted_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='genre',
-            name='tenant',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='%(class)ss', to='tenants.tenant'),
+            model_name="genre",
+            name="tenant",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="%(class)ss",
+                to="tenants.tenant",
+            ),
         ),
         migrations.AlterField(
-            model_name='userbook',
-            name='deleted_at',
+            model_name="userbook",
+            name="deleted_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
     ]

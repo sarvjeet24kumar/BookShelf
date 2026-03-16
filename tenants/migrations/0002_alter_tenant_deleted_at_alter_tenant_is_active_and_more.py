@@ -6,33 +6,37 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('tenants', '0001_initial'),
+        ("tenants", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='tenant',
-            name='deleted_at',
+            model_name="tenant",
+            name="deleted_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='is_active',
+            model_name="tenant",
+            name="is_active",
             field=models.BooleanField(default=True),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='name',
+            model_name="tenant",
+            name="name",
             field=models.CharField(max_length=255),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='slug',
+            model_name="tenant",
+            name="slug",
             field=models.SlugField(max_length=100, unique=True),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='subscription_plan',
-            field=models.CharField(choices=[('FREE', 'Free'), ('PREMIUM', 'Premium')], default='FREE', max_length=50),
+            model_name="tenant",
+            name="subscription_plan",
+            field=models.CharField(
+                choices=[("FREE", "Free"), ("PREMIUM", "Premium")],
+                default="FREE",
+                max_length=50,
+            ),
         ),
     ]

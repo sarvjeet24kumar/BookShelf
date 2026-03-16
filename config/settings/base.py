@@ -10,7 +10,6 @@ from common.constants import (
     THROTTLE_RATE_AUTH,
 )
 
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 LOG_DIR = BASE_DIR / "logs"
@@ -51,10 +50,12 @@ INSTALLED_APPS = [
     "common",
     "tenants",
     "payments",
+    "silk",
 ]
 
 MIDDLEWARE = [
     "common.middleware.RequestIDMiddleware",
+    "silk.middleware.SilkyMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -164,7 +165,6 @@ SIMPLE_JWT = {
 SITE_URL = env("SITE_URL", default="http://127.0.0.1:8000")
 
 from config.logging import LOGGING
-
 
 # Razorpay Settings
 RAZORPAY_KEY_ID = env("RAZORPAY_KEY_ID", default="")

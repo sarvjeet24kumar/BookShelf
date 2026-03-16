@@ -9,7 +9,7 @@ from common.throttling import IPThrottle, AuthThrottle
 from accounts.serializers.auth_serializers import LoginSerializer
 from accounts.services import login_otp_service
 from accounts.utils.tenant_utils import get_tenant_from_header
-from accounts.utils.user_lookup import find_user_with_validation,find_user
+from accounts.utils.user_lookup import find_user_with_validation, find_user
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -24,7 +24,7 @@ class LoginView(APIView):
     throttle_classes = [IPThrottle, AuthThrottle]
 
     def post(self, request):
-        tenant = get_tenant_from_header(request, required=False) 
+        tenant = get_tenant_from_header(request, required=False)
 
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -79,18 +79,13 @@ class VerifyLoginView(APIView):
         email = request.data.get("email", "").strip().lower()
         username = request.data.get("username", "").strip().lower()
         otp = request.data.get("otp", "").strip()
-    
+
         user = find_user_with_validation(
-            email=email, 
-            username=username, 
-            tenant=tenant, 
-            require_otp=True, 
-            otp=otp
+            email=email, username=username, tenant=tenant, require_otp=True, otp=otp
         )
 
         if not user:
             raise ValidationError("Invalid credentials or OTP.")
-
 
         tenant_id = str(user.tenant_id) if user.tenant else None
         is_valid, error_msg = login_otp_service.verify(
@@ -111,4 +106,3 @@ class VerifyLoginView(APIView):
                 "refresh": str(refresh),
             }
         )
-

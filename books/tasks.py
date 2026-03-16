@@ -9,7 +9,10 @@ logger = logging.getLogger(__name__)
 @shared_task(
     bind=True,
     autoretry_for=(Exception,),
-    retry_kwargs={"max_retries": CELERY_MAX_RETRIES, "countdown": CELERY_COUNTDOWN_SHORT},
+    retry_kwargs={
+        "max_retries": CELERY_MAX_RETRIES,
+        "countdown": CELERY_COUNTDOWN_SHORT,
+    },
 )
 def invalidate_book_cache_task(self, tenant_id: str):
     """

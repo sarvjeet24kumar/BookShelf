@@ -23,7 +23,11 @@ class CreateOrderView(APIView):
     Restricted to Tenant Admins.
 
     """
-    authentication_classes = [TenantAwareJWTAuthentication, CsrfExemptSessionAuthentication]
+
+    authentication_classes = [
+        TenantAwareJWTAuthentication,
+        CsrfExemptSessionAuthentication,
+    ]
     permission_classes = [IsTenantAdmin]
 
     def post(self, request):
@@ -59,21 +63,23 @@ class CreateOrderView(APIView):
                 tenant=tenant,
                 subscription=subscription,
                 initiated_by=request.user,
-                razorpay_order_id=rp_order['id'],
+                razorpay_order_id=rp_order["id"],
                 amount=amount,
                 currency=currency,
-                status=PaymentStatus.CREATED
+                status=PaymentStatus.CREATED,
             )
             logger.info("Payment record created successfully")
         except Exception as e:
             logger.exception(f"Failed to create Payment record: {str(e)}")
             raise ValidationError("Failed to save payment record. Please try again.")
 
-        serializer = PaymentOrderResponseSerializer({
-            "razorpay_order_id": payment.razorpay_order_id,
-            "amount": payment.amount,
-            "currency": payment.currency,
-            "status": payment.status
-        })
+        serializer = PaymentOrderResponseSerializer(
+            {
+                "razorpay_order_id": payment.razorpay_order_id,
+                "amount": payment.amount,
+                "currency": payment.currency,
+                "status": payment.status,
+            }
+        )
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)

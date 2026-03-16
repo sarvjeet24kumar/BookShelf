@@ -136,7 +136,10 @@ def reconcile_payments_task():
                             payment.razorpay_order_id
                         )
                         for rp_payment in rp_payments.get("items", []):
-                            if rp_payment.get("status") == RazorpayPaymentStatus.CAPTURED:
+                            if (
+                                rp_payment.get("status")
+                                == RazorpayPaymentStatus.CAPTURED
+                            ):
                                 _handle_captured(
                                     payment.razorpay_order_id, rp_payment.get("id")
                                 )
@@ -152,9 +155,7 @@ def reconcile_payments_task():
                     payment.save(update_fields=["status", "updated_at"])
 
         except Exception as e:
-            logger.error(
-                f"Failed to reconcile payment: {str(e)}"
-            )
+            logger.error(f"Failed to reconcile payment: {str(e)}")
 
     logger.info(f"Reconciliation complete. {reconciled_count} payments reconciled.")
     return f"Reconciled {reconciled_count} payments."

@@ -17,18 +17,18 @@ class RequestIDMiddleware:
     """
     Middleware to generate or extract correlation IDs for request tracing.
     """
-    
+
     def __init__(self, get_response):
         self.get_response = get_response
-    
+
     def __call__(self, request):
-        request_id = request.headers.get('X-Request-ID') or generate_request_id()
-        
+        request_id = request.headers.get("X-Request-ID") or generate_request_id()
+
         set_request_id(request_id)
         request.request_id = request_id
-        
+
         response = self.get_response(request)
-        response['X-Request-ID'] = request_id
+        response["X-Request-ID"] = request_id
         return response
 
 
@@ -36,22 +36,21 @@ class RequestLogMiddleware:
     """
     Middleware for structured request/response logging.
     """
-    
+
     def __init__(self, get_response):
         self.get_response = get_response
-    
+
     def __call__(self, request):
         start_time = time.time()
-        
+
         response = self.get_response(request)
-        
+
         tenant = get_current_tenant()
         if tenant:
             set_tenant_id(str(tenant.id))
-        
 
         execution_time_ms = int((time.time() - start_time) * 1000)
-    
+
         if response.status_code < 400:
             logger.info(
                 f"{request.method} {request.path} {response.status_code} ({execution_time_ms}ms)"
@@ -63,9 +62,9 @@ class RequestLogMiddleware:
         else:
             logger.error(
                 f"{request.method} {request.path} {response.status_code} ({execution_time_ms}ms)",
-                exc_info=True
+                exc_info=True,
             )
-        
+
         return response
 
 

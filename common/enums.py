@@ -20,7 +20,6 @@ class RequestStatus(models.TextChoices):
     REJECTED = "REJECTED", "Rejected"
 
 
-
 class SubscriptionPlan(models.TextChoices):
     FREE = "FREE", "Free"
     PREMIUM = "PREMIUM", "Premium"

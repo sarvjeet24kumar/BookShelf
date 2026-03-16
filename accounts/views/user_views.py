@@ -106,16 +106,14 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
     def update(self, request, *args, **kwargs):
         """
         Update user account.
-        
+
         """
         partial = kwargs.pop("partial", False)
         user = self.get_object()
         is_self = user.id == request.user.id
 
         if "email" in request.data or "role" in request.data:
-            logger.warning(
-                "Blocked: Attempt to update immutable fields (email/role)"
-            )
+            logger.warning("Blocked: Attempt to update immutable fields (email/role)")
             raise PermissionDenied("Email and role cannot be changed.")
 
         if request.user.role == UserRole.ADMIN and not is_self:
@@ -123,7 +121,9 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
                 logger.warning(
                     "Blocked: Tenant admin tried to update admin/super admin"
                 )
-                raise PermissionDenied("Tenant admin cannot update other admin accounts.")
+                raise PermissionDenied(
+                    "Tenant admin cannot update other admin accounts."
+                )
 
         new_username = request.data.get("username")
         if new_username and new_username.lower() != user.username:
@@ -149,27 +149,21 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
         is_admin = request.user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]
         if is_admin and original_is_active and not updated_user.is_active:
             blacklist_user_tokens(updated_user)
-            logger.info(
-                "User suspended and tokens blacklisted"
-            )
+            logger.info("User suspended and tokens blacklisted")
         else:
-            logger.info(
-                "User updated successfully"
-            )
+            logger.info("User updated successfully")
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def destroy(self, request, *args, **kwargs):
         """
         Delete user account.
-    
+
         """
-        user = self.get_object()  
+        user = self.get_object()
         is_self = user.id == request.user.id
         if request.user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN] and is_self:
-            logger.warning(
-                "Blocked: Admin tried to delete self"
-            )
+            logger.warning("Blocked: Admin tried to delete self")
             raise PermissionDenied("Admins cannot delete their own account.")
 
         if request.user.role == UserRole.ADMIN and not is_self:
@@ -177,7 +171,9 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
                 logger.warning(
                     "Blocked: Tenant admin tried to delete admin/super admin"
                 )
-                raise PermissionDenied("Tenant admin cannot delete other admin or super admin accounts.")
+                raise PermissionDenied(
+                    "Tenant admin cannot delete other admin or super admin accounts."
+                )
 
         with transaction.atomic():
             if is_self:
@@ -185,14 +181,10 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
                 user.is_active = False
                 user.save(update_fields=["is_active"])
                 blacklist_user_tokens(user)
-                logger.info(
-                    "User self-deleted and tokens blacklisted"
-                )
+                logger.info("User self-deleted and tokens blacklisted")
             else:
                 user.soft_delete()
                 blacklist_user_tokens(user)
-                logger.info(
-                    "Admin deleted user and blacklisted tokens"
-                )
+                logger.info("Admin deleted user and blacklisted tokens")
 
         return Response(status=status.HTTP_204_NO_CONTENT)

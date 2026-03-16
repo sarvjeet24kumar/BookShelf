@@ -29,8 +29,6 @@ class UserBooksView(UserLibraryPermissionMixin, APIView):
 
     permission_classes = [IsTenantMember]
 
-
-
     def get(self, request, user_id):
         """List all books in a user's library."""
         target_user = self.check_permission(request, user_id)
@@ -92,9 +90,7 @@ class UserBooksView(UserLibraryPermissionMixin, APIView):
                 user_book.restore()
                 user_book.status = status_value
                 user_book.save(update_fields=["status", "updated_at"])
-                logger.info(
-                    "Book restored to library"
-                )
+                logger.info("Book restored to library")
                 return Response(
                     {"detail": "Book added to library."},
                     status=status.HTTP_201_CREATED,
@@ -112,9 +108,7 @@ class UserBooksView(UserLibraryPermissionMixin, APIView):
 
         UserBook.objects.create(user=target_user, book=book, status=status_value)
 
-        logger.info(
-            "Book added to library"
-        )
+        logger.info("Book added to library")
 
         return Response(
             {"detail": "Book added to library."},
@@ -128,8 +122,6 @@ class UserBookDetailView(UserLibraryPermissionMixin, APIView):
     """
 
     permission_classes = [IsTenantMember]
-
-
 
     def get_object(self, request, user_id, book_id):
         """Get user's book by ID or raise NotFound exception."""
@@ -163,9 +155,7 @@ class UserBookDetailView(UserLibraryPermissionMixin, APIView):
         user_book.status = serializer.validated_data["status"]
         user_book.save(update_fields=["status", "updated_at"])
 
-        logger.info(
-            "Book status updated"
-        )
+        logger.info("Book status updated")
 
         return Response(
             {"detail": "Book status updated successfully."},
@@ -177,8 +167,6 @@ class UserBookDetailView(UserLibraryPermissionMixin, APIView):
         user_book, target_user = self.get_object(request, user_id, book_id)
         user_book.soft_delete()
 
-        logger.info(
-            "Book removed from library"
-        )
+        logger.info("Book removed from library")
 
         return Response(status=status.HTTP_204_NO_CONTENT)

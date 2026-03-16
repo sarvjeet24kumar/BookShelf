@@ -29,20 +29,18 @@ env = environ.Env()
 
 
 class Command(BaseCommand):
-    
+
     def handle(self, *args, **options):
-        username = env.str('SUPERADMIN_USERNAME', default='superadmin')
-        email = env.str('SUPERADMIN_EMAIL', default='admin@bookshelf.com')
-        password = env.str('SUPERADMIN_PASSWORD', default=None)
-        first_name = env.str('SUPERADMIN_FIRST_NAME', default='Super')
-        last_name = env.str('SUPERADMIN_LAST_NAME', default='Admin')
-        phone_no = env.str('SUPERADMIN_PHONE', default='0000000000')
-        
+        username = env.str("SUPERADMIN_USERNAME", default="superadmin")
+        email = env.str("SUPERADMIN_EMAIL", default="admin@bookshelf.com")
+        password = env.str("SUPERADMIN_PASSWORD", default=None)
+        first_name = env.str("SUPERADMIN_FIRST_NAME", default="Super")
+        last_name = env.str("SUPERADMIN_LAST_NAME", default="Admin")
+        phone_no = env.str("SUPERADMIN_PHONE", default="0000000000")
+
         if not password:
-            raise CommandError(
-                'SUPERADMIN_PASSWORD environment variable is required.'
-            )
-        
+            raise CommandError("SUPERADMIN_PASSWORD environment variable is required.")
+
         if User.all_objects.filter(username=username).exists():
             self.stdout.write(
                 self.style.WARNING(
@@ -50,7 +48,7 @@ class Command(BaseCommand):
                 )
             )
             return
-        
+
         try:
             superadmin = User.objects.create_superuser(
                 username=username,
@@ -59,20 +57,14 @@ class Command(BaseCommand):
                 first_name=first_name,
                 last_name=last_name,
                 phone_no=phone_no,
-                tenant=None 
+                tenant=None,
             )
-            
+
             self.stdout.write(
-                self.style.SUCCESS(
-                    f'Superadmin "{username}" created successfully'
-                )
+                self.style.SUCCESS(f'Superadmin "{username}" created successfully')
             )
-            self.stdout.write(
-                f'Email: {email}'
-            )
-            self.stdout.write(
-                f'ID: {superadmin.id}'
-            )
-            
+            self.stdout.write(f"Email: {email}")
+            self.stdout.write(f"ID: {superadmin.id}")
+
         except Exception as e:
-            raise CommandError(f'Failed to create superadmin: {str(e)}')
+            raise CommandError(f"Failed to create superadmin: {str(e)}")

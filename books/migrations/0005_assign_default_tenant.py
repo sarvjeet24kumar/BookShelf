@@ -8,18 +8,18 @@ def assign_default_tenant(apps, schema_editor):
     Create a default tenant and assign all existing books/genres to it.
     This handles existing data before making tenant field non-nullable.
     """
-    Tenant = apps.get_model('tenants', 'Tenant')
-    Book = apps.get_model('books', 'Book')
-    Genre = apps.get_model('books', 'Genre')
+    Tenant = apps.get_model("tenants", "Tenant")
+    Book = apps.get_model("books", "Book")
+    Genre = apps.get_model("books", "Genre")
 
     # Create or get default tenant
     default_tenant, created = Tenant.objects.get_or_create(
-        slug='default',
+        slug="default",
         defaults={
-            'name': 'Default Tenant',
-            'is_active': True,
-            'subscription_plan': 'FREE',
-        }
+            "name": "Default Tenant",
+            "is_active": True,
+            "subscription_plan": "FREE",
+        },
     )
 
     # Assign all books without tenant to default tenant
@@ -33,12 +33,12 @@ def reverse_assign_default_tenant(apps, schema_editor):
     """
     Reverse: Set tenant to NULL (for rollback)
     """
-    Book = apps.get_model('books', 'Book')
-    Genre = apps.get_model('books', 'Genre')
-    Tenant = apps.get_model('tenants', 'Tenant')
+    Book = apps.get_model("books", "Book")
+    Genre = apps.get_model("books", "Genre")
+    Tenant = apps.get_model("tenants", "Tenant")
 
     try:
-        default_tenant = Tenant.objects.get(slug='default')
+        default_tenant = Tenant.objects.get(slug="default")
         Book.objects.filter(tenant=default_tenant).update(tenant=None)
         Genre.objects.filter(tenant=default_tenant).update(tenant=None)
     except Tenant.DoesNotExist:
@@ -48,8 +48,8 @@ def reverse_assign_default_tenant(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('books', '0004_book_tenant_genre_tenant_alter_book_deleted_at_and_more'),
-        ('tenants', '0001_initial'),
+        ("books", "0004_book_tenant_genre_tenant_alter_book_deleted_at_and_more"),
+        ("tenants", "0001_initial"),
     ]
 
     operations = [

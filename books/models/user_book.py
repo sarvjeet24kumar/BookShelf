@@ -15,16 +15,15 @@ class UserBook(BaseModel):
     )
 
     status = models.CharField(
-        max_length=MAX_STATUS_LENGTH, choices=BookStatus.choices, default=BookStatus.TO_READ
+        max_length=MAX_STATUS_LENGTH,
+        choices=BookStatus.choices,
+        default=BookStatus.TO_READ,
     )
 
     class Meta:
         db_table = "user_books"
         constraints = [
-            models.UniqueConstraint(
-                fields=["user", "book"],
-                name="unique_user_book"
-            )
+            models.UniqueConstraint(fields=["user", "book"], name="unique_user_book")
         ]
 
     def __str__(self):

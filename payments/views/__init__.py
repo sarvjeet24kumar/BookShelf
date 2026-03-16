@@ -1,6 +1,7 @@
 """
 Payments views package.
 """
+
 from .order_views import CreateOrderView
 from .checkout_views import CheckoutView
 from .verification_views import VerifyPaymentView
@@ -26,4 +27,3 @@ __all__ = [
     "WebhookEventListView",
     "WebhookEventDetailView",
 ]
-

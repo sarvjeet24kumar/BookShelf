@@ -21,13 +21,13 @@ from accounts.constants import (
 
 class User(AbstractUser, BaseModel):
     tenant = models.ForeignKey(
-        'tenants.Tenant',
+        "tenants.Tenant",
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-        related_name='users'
+        related_name="users",
     )
-    
+
     # Use TenantAwareUserManager for proper create_user/create_superuser support
     objects = TenantAwareUserManager()
     all_objects = models.Manager()
@@ -49,16 +49,14 @@ class User(AbstractUser, BaseModel):
     role = models.CharField(
         max_length=MAX_ROLE_LENGTH, choices=UserRole.choices, default=UserRole.USER
     )
-    is_email_verified = models.BooleanField(
-        default=False
-    )
+    is_email_verified = models.BooleanField(default=False)
 
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = ["email", "first_name"]
 
     class Meta:
         db_table = "user"
-        unique_together = [('email', 'tenant')]
+        unique_together = [("email", "tenant")]
 
     def __str__(self):
         return self.username

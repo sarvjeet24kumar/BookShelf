@@ -13,21 +13,19 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--tenant',
-            type=str,
-            help='Tenant slug to seed data for (manual use only)'
+            "--tenant", type=str, help="Tenant slug to seed data for (manual use only)"
         )
         parser.add_argument(
-            'tenant_id',
-            nargs='?',
+            "tenant_id",
+            nargs="?",
             type=str,
-            help='Tenant ID for automatic seeding (used by signal)'
+            help="Tenant ID for automatic seeding (used by signal)",
         )
         parser.add_argument(
-            'admin_user_id',
-            nargs='?',
+            "admin_user_id",
+            nargs="?",
             type=str,
-            help='Admin user ID for automatic seeding (used by signal)'
+            help="Admin user ID for automatic seeding (used by signal)",
         )
 
     @transaction.atomic
@@ -35,27 +33,35 @@ class Command(BaseCommand):
         self.stdout.write("Seeding books and genres...")
 
         # Get tenant (prioritize tenant_id from signal, fallback to --tenant flag)
-        tenant_id = options.get('tenant_id')
-        admin_user_id = options.get('admin_user_id')
-        tenant_slug = options.get('tenant')
-        
+        tenant_id = options.get("tenant_id")
+        admin_user_id = options.get("admin_user_id")
+        tenant_slug = options.get("tenant")
+
         if tenant_id:
             try:
                 tenant = Tenant.objects.get(id=tenant_id)
-                self.stdout.write(f"Auto-seeding for tenant: {tenant.name} ({tenant.slug})")
+                self.stdout.write(
+                    f"Auto-seeding for tenant: {tenant.name} ({tenant.slug})"
+                )
             except Tenant.DoesNotExist:
-                self.stdout.write(self.style.ERROR(f"Tenant ID '{tenant_id}' not found!"))
+                self.stdout.write(
+                    self.style.ERROR(f"Tenant ID '{tenant_id}' not found!")
+                )
                 return
         elif tenant_slug:
             try:
                 tenant = Tenant.objects.get(slug=tenant_slug)
             except Tenant.DoesNotExist:
-                self.stdout.write(self.style.ERROR(f"Tenant '{tenant_slug}' not found!"))
+                self.stdout.write(
+                    self.style.ERROR(f"Tenant '{tenant_slug}' not found!")
+                )
                 return
         else:
             tenant = Tenant.objects.first()
             if not tenant:
-                self.stdout.write(self.style.ERROR("No tenants found! Please create a tenant first."))
+                self.stdout.write(
+                    self.style.ERROR("No tenants found! Please create a tenant first.")
+                )
                 return
 
         self.stdout.write(f"Using tenant: {tenant.name} ({tenant.slug})")
@@ -202,12 +208,20 @@ class Command(BaseCommand):
                 user = User.objects.get(id=admin_user_id)
                 self.stdout.write(f"Using admin user: {user.username}")
             except User.DoesNotExist:
-                self.stdout.write(self.style.WARNING(f"Admin user ID '{admin_user_id}' not found. Will create books without creator."))
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"Admin user ID '{admin_user_id}' not found. Will create books without creator."
+                    )
+                )
                 user = None
         else:
             user = User.objects.filter(role=UserRole.ADMIN, tenant=tenant).first()
             if not user:
-                self.stdout.write(self.style.WARNING(f"No admin user found for tenant {tenant.name}. Books will be created without a creator."))
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"No admin user found for tenant {tenant.name}. Books will be created without a creator."
+                    )
+                )
 
         for data in books_data:
             book, created = Book.objects.get_or_create(
@@ -244,6 +258,14 @@ class Command(BaseCommand):
                     defaults={"status": BookStatus.TO_READ},
                 )
 
-        self.stdout.write(self.style.SUCCESS(f"\nSeeding completed successfully for tenant: {tenant.name}!"))
-        self.stdout.write(f"  Total genres: {Genre.objects.filter(tenant=tenant).count()}")
-        self.stdout.write(f"  Total books: {Book.objects.filter(tenant=tenant).count()}")
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"\nSeeding completed successfully for tenant: {tenant.name}!"
+            )
+        )
+        self.stdout.write(
+            f"  Total genres: {Genre.objects.filter(tenant=tenant).count()}"
+        )
+        self.stdout.write(
+            f"  Total books: {Book.objects.filter(tenant=tenant).count()}"
+        )

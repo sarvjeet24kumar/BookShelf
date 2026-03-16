@@ -8,7 +8,6 @@ Accounts views package.
 - user_views: User CRUD operations
 """
 
-
 from .registration_views import SignupView
 from .email_verification_views import VerifyEmailView, ResendOTPView
 from .authentication_views import LoginView, VerifyLoginView

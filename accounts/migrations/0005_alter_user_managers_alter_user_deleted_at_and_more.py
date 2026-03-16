@@ -7,29 +7,34 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0004_user_is_email_verified_user_tenant_alter_user_role'),
-        ('tenants', '0002_alter_tenant_deleted_at_alter_tenant_is_active_and_more'),
+        ("accounts", "0004_user_is_email_verified_user_tenant_alter_user_role"),
+        ("tenants", "0002_alter_tenant_deleted_at_alter_tenant_is_active_and_more"),
     ]
 
     operations = [
         migrations.AlterModelManagers(
-            name='user',
-            managers=[
-            ],
+            name="user",
+            managers=[],
         ),
         migrations.AlterField(
-            model_name='user',
-            name='deleted_at',
+            model_name="user",
+            name="deleted_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='user',
-            name='is_email_verified',
+            model_name="user",
+            name="is_email_verified",
             field=models.BooleanField(default=False),
         ),
         migrations.AlterField(
-            model_name='user',
-            name='tenant',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='users', to='tenants.tenant'),
+            model_name="user",
+            name="tenant",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="users",
+                to="tenants.tenant",
+            ),
         ),
     ]

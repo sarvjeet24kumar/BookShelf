@@ -26,14 +26,14 @@ class BaseOTPService(ABC):
         return f"{self.prefix}:{identifier}"
 
     def store_otp(self, identifier, plain_otp, email, tenant_id=None, extra_data=None):
-        """Hash OTP, store in cache, and send email. """
+        """Hash OTP, store in cache, and send email."""
         data = {"hashed_otp": hash_otp(plain_otp)}
         if extra_data:
             data.update(extra_data)
-        
+
         cache_key = self.build_cache_key(tenant_id, identifier)
         cache.set(cache_key, data, timeout=self.get_expiry())
-        
+
         self.send_otp_notification(email, plain_otp)
 
         logger.info("%s OTP created successfully", self.prefix)

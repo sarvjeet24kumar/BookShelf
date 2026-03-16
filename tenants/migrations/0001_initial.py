@@ -8,25 +8,54 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Tenant',
+            name="Tenant",
             fields=[
-                ('id', models.UUIDField(default=uuid6.uuid7, editable=False, primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('deleted_at', models.DateTimeField(null=True)),
-                ('name', models.CharField(help_text='Organization name', max_length=255)),
-                ('slug', models.SlugField(help_text='URL-friendly identifier', max_length=100, unique=True)),
-                ('is_active', models.BooleanField(default=True, help_text='Whether tenant is active and can access system')),
-                ('subscription_plan', models.CharField(choices=[('FREE', 'Free'), ('PREMIUM', 'Premium')], default='FREE', help_text='Subscription tier', max_length=50)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid6.uuid7,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("deleted_at", models.DateTimeField(null=True)),
+                (
+                    "name",
+                    models.CharField(help_text="Organization name", max_length=255),
+                ),
+                (
+                    "slug",
+                    models.SlugField(
+                        help_text="URL-friendly identifier", max_length=100, unique=True
+                    ),
+                ),
+                (
+                    "is_active",
+                    models.BooleanField(
+                        default=True,
+                        help_text="Whether tenant is active and can access system",
+                    ),
+                ),
+                (
+                    "subscription_plan",
+                    models.CharField(
+                        choices=[("FREE", "Free"), ("PREMIUM", "Premium")],
+                        default="FREE",
+                        help_text="Subscription tier",
+                        max_length=50,
+                    ),
+                ),
             ],
             options={
-                'db_table': 'tenants',
-                'ordering': ['-created_at'],
+                "db_table": "tenants",
+                "ordering": ["-created_at"],
             },
         ),
     ]

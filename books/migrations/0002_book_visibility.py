@@ -6,13 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('books', '0001_initial'),
+        ("books", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='book',
-            name='visibility',
-            field=models.CharField(choices=[('PUBLIC', 'Public'), ('PRIVATE', 'Private')], default='PUBLIC', max_length=10),
+            model_name="book",
+            name="visibility",
+            field=models.CharField(
+                choices=[("PUBLIC", "Public"), ("PRIVATE", "Private")],
+                default="PUBLIC",
+                max_length=10,
+            ),
         ),
     ]

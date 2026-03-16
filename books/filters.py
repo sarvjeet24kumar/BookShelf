@@ -9,19 +9,15 @@ class BookFilter(django_filters.FilterSet):
     genre = django_filters.CharFilter(
         field_name="book_genres__genre__name",
         lookup_expr="icontains",
-    
     )
     title = django_filters.CharFilter(
         lookup_expr="icontains",
-
     )
     author = django_filters.CharFilter(
         lookup_expr="icontains",
-
     )
     request_status = django_filters.CharFilter(
         method="filter_request_status",
-
     )
 
     class Meta:
@@ -44,15 +40,12 @@ class MyBookFilter(django_filters.FilterSet):
 
     status = django_filters.CharFilter(
         method="filter_status",
-
     )
     title = django_filters.CharFilter(
         lookup_expr="icontains",
-
     )
     author = django_filters.CharFilter(
         lookup_expr="icontains",
-
     )
 
     class Meta:

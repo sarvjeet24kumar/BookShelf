@@ -24,25 +24,22 @@ def auto_seed_tenant_on_first_admin(sender, instance, created, **kwargs):
     """
     if not created:
         return
-    
+
     if instance.role != UserRole.ADMIN:
         return
 
     if instance.tenant is None:
         logger.debug("Skipping seeding for global superadmin")
         return
-    
+
     if is_tenant_seeded(instance.tenant.id):
         logger.info("Tenant already seeded")
         return
-    
-    logger.info(
-        "Queuing auto-seeding for tenant"
-    )
-    
+
+    logger.info("Queuing auto-seeding for tenant")
+
     try:
         seed_tenant_task.delay(str(instance.tenant.id), str(instance.id))
         logger.info("Tenant seeding task queued")
     except Exception as e:
         logger.exception(f"Failed to queue seeding for tenant: {str(e)}")
-

@@ -23,16 +23,22 @@ def find_user(email=None, username=None, tenant=None):
 
     if username:
         if tenant_id is not None:
-            return User.all_objects.filter(username=username, tenant_id=tenant_id).first()
+            return User.all_objects.filter(
+                username=username, tenant_id=tenant_id
+            ).first()
         else:
-            return User.all_objects.filter(username=username, tenant_id__isnull=True,role=UserRole.SUPER_ADMIN).first()
-    
+            return User.all_objects.filter(
+                username=username, tenant_id__isnull=True, role=UserRole.SUPER_ADMIN
+            ).first()
+
     if email:
         if tenant_id is not None:
             return User.all_objects.filter(email=email, tenant_id=tenant_id).first()
         else:
-            return User.all_objects.filter(email=email, tenant_id__isnull=True,role=UserRole.SUPER_ADMIN).first()
-    
+            return User.all_objects.filter(
+                email=email, tenant_id__isnull=True, role=UserRole.SUPER_ADMIN
+            ).first()
+
     return None
 
 
@@ -41,8 +47,8 @@ def find_user_with_validation(email, username, tenant, require_otp=False, otp=No
     Validate input and find user in one step.
     """
     validate_email_or_username(email, username)
-    
+
     if require_otp and not otp:
         raise ValidationError("OTP is required.")
-    
+
     return find_user(email=email, username=username, tenant=tenant)

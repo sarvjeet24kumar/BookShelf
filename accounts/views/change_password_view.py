@@ -17,28 +17,32 @@ class ChangePasswordView(APIView):
     Allow authenticated users to change their password.
     Requires current password verification for security.
     """
-    
+
     permission_classes = [IsAuthenticated]
     throttle_classes = [IPThrottle, AuthThrottle]
-    
+
     def post(self, request):
         serializer = ChangePasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
-        current_password = serializer.validated_data['current_password']
-        new_password = serializer.validated_data['new_password']
-        
+
+        current_password = serializer.validated_data["current_password"]
+        new_password = serializer.validated_data["new_password"]
+
         user = request.user
-        
+
         if not user.check_password(current_password):
-            raise ValidationError({"current_password": "Current password is incorrect."})
-        
+            raise ValidationError(
+                {"current_password": "Current password is incorrect."}
+            )
+
         user.set_password(new_password)
-        user.save(update_fields=['password', 'updated_at'])
-        
+        user.save(update_fields=["password", "updated_at"])
+
         logger.info("Password changed successfully")
-        
+
         return Response(
-            {"detail": "Password changed successfully. Please login with your new password."},
-            status=status.HTTP_200_OK
+            {
+                "detail": "Password changed successfully. Please login with your new password."
+            },
+            status=status.HTTP_200_OK,
         )

@@ -42,7 +42,6 @@ class TenantAwareJWTAuthentication(JWTAuthentication):
             if not user.is_email_verified:
                 logger.warning(
                     "Blocked API access for unverified user",
-
                 )
                 raise AuthenticationFailed(
                     "Please verify your email before accessing the application."

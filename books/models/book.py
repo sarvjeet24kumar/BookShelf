@@ -27,7 +27,7 @@ class Book(TenantAwareModel):
     Book model - extends TenantAwareModel for automatic tenant filtering.
     Inherits: id, created_at, updated_at, deleted_at, tenant, objects manager
     """
-    
+
     title = models.CharField(
         max_length=MAX_TITLE_LENGTH,
         validators=[MinLengthValidator(MIN_TITLE_LENGTH), title_validator],
@@ -65,8 +65,7 @@ class Book(TenantAwareModel):
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
-                fields=['tenant', 'isbn'],
-                name='unique_tenant_isbn'
+                fields=["tenant", "isbn"], name="unique_tenant_isbn"
             )
         ]
 

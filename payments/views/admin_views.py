@@ -20,10 +20,11 @@ class SubscriptionListView(ListAPIView):
     List all subscriptions.
     SuperAdmin only.
     """
+
     permission_classes = [IsSuperAdmin]
     serializer_class = SubscriptionAdminSerializer
     pagination_class = CommonPagination
-    queryset = Subscription.objects.select_related('tenant').all()
+    queryset = Subscription.objects.select_related("tenant").all()
 
 
 class SubscriptionDetailView(RetrieveAPIView):
@@ -31,10 +32,11 @@ class SubscriptionDetailView(RetrieveAPIView):
     Retrieve subscription details.
     SuperAdmin only.
     """
+
     permission_classes = [IsSuperAdmin]
     serializer_class = SubscriptionAdminSerializer
-    lookup_field = 'id'
-    queryset = Subscription.objects.select_related('tenant').all()
+    lookup_field = "id"
+    queryset = Subscription.objects.select_related("tenant").all()
 
 
 class PaymentListView(ListAPIView):
@@ -42,10 +44,13 @@ class PaymentListView(ListAPIView):
     List all payments.
     SuperAdmin only.
     """
+
     permission_classes = [IsSuperAdmin]
     serializer_class = PaymentAdminSerializer
     pagination_class = CommonPagination
-    queryset = Payment.all_objects.select_related('tenant', 'subscription', 'initiated_by').all()
+    queryset = Payment.all_objects.select_related(
+        "tenant", "subscription", "initiated_by"
+    ).all()
 
 
 class PaymentDetailView(RetrieveAPIView):
@@ -53,10 +58,13 @@ class PaymentDetailView(RetrieveAPIView):
     Retrieve payment details.
     SuperAdmin only.
     """
+
     permission_classes = [IsSuperAdmin]
     serializer_class = PaymentAdminSerializer
-    lookup_field = 'id'
-    queryset = Payment.all_objects.select_related('tenant', 'subscription', 'initiated_by').all()
+    lookup_field = "id"
+    queryset = Payment.all_objects.select_related(
+        "tenant", "subscription", "initiated_by"
+    ).all()
 
 
 class WebhookEventListView(ListAPIView):
@@ -64,6 +72,7 @@ class WebhookEventListView(ListAPIView):
     List webhook events.
     SuperAdmin only
     """
+
     permission_classes = [IsSuperAdmin]
     serializer_class = WebhookEventAdminSerializer
     pagination_class = CommonPagination
@@ -75,7 +84,8 @@ class WebhookEventDetailView(RetrieveAPIView):
     Retrieve webhook event details.
     - SuperAdmin only
     """
+
     permission_classes = [IsSuperAdmin]
     serializer_class = WebhookEventAdminSerializer
-    lookup_field = 'id'
+    lookup_field = "id"
     queryset = WebhookEvent.objects.all()

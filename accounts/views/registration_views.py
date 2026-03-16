@@ -10,7 +10,6 @@ from accounts.serializers.auth_serializers import SignupSerializer
 from accounts.services import email_verification_service
 from accounts.utils.tenant_utils import get_tenant_from_header
 
-
 logger = logging.getLogger(__name__)
 User = get_user_model()
 
@@ -38,9 +37,9 @@ class SignupView(APIView):
         ).first()
 
         if existing_user:
-             raise ValidationError(
-                    "An account with this email cannot be created. Please contact support."
-                )
+            raise ValidationError(
+                "An account with this email cannot be created. Please contact support."
+            )
 
         user = serializer.save(tenant=tenant)
 

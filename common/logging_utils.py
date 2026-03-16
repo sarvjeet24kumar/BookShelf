@@ -3,8 +3,8 @@ import logging
 from contextvars import ContextVar
 from tenants.context import get_current_tenant
 
-request_id_var = ContextVar('request_id', default=None)
-tenant_id_var= ContextVar('tenant_id', default=None)
+request_id_var = ContextVar("request_id", default=None)
+tenant_id_var = ContextVar("tenant_id", default=None)
 
 
 def generate_request_id():
@@ -12,7 +12,7 @@ def generate_request_id():
     return str(uuid.uuid4())
 
 
-def set_request_id(request_id) :
+def set_request_id(request_id):
     """Set the request ID for the current context."""
     request_id_var.set(request_id)
 
@@ -43,20 +43,20 @@ class LogContextFilter(logging.Filter):
     Logging filter that automatically injects contextual metadata
     into all log records.
     """
-    
+
     def filter(self, record):
         """
         Add context variables to the log record.
 
         """
-        record.request_id = get_request_id() or '-'
-        
+        record.request_id = get_request_id() or "-"
+
         tenant_id = get_tenant_id()
         if not tenant_id:
             tenant = get_current_tenant()
             if tenant:
                 tenant_id = str(tenant.id)
-        
-        record.tenant_id = tenant_id or '-'
-        
+
+        record.tenant_id = tenant_id or "-"
+
         return True

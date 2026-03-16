@@ -8,7 +8,7 @@ class Genre(TenantAwareModel):
     Genre model - extends TenantAwareModel for automatic tenant filtering.
     Inherits: id, created_at, updated_at, deleted_at, tenant, objects manager
     """
-    
+
     name = models.CharField(max_length=MAX_GENRE_NAME_LENGTH)
     description = models.TextField(blank=True, default="")
 
@@ -17,8 +17,7 @@ class Genre(TenantAwareModel):
         ordering = ["name"]
         constraints = [
             models.UniqueConstraint(
-                fields=['tenant', 'name'],
-                name='unique_tenant_genre'
+                fields=["tenant", "name"], name="unique_tenant_genre"
             )
         ]
 
