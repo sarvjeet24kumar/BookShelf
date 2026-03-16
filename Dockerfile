@@ -41,14 +41,6 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV DJANGO_SETTINGS_MODULE=config.settings.prod
 
-# Collect static files during build (baked into image)
-RUN SECRET_KEY=build-only-key \
-    DATABASE_URL=sqlite:///tmp/db.sqlite3 \
-    OTP_EXPIRY_MINUTES=5 \
-    USER_DATA_RETENTION_DAYS=30 \
-    UNVERIFIED_USER_CLEANUP_HOURS=24 \
-    uv run python manage.py collectstatic --no-input
-
 # Expose the API port
 EXPOSE 8000
 

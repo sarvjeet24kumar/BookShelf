@@ -11,6 +11,9 @@ if [ "$SERVICE" = "web" ]; then
     echo "[entrypoint] Seeding super admin..."
     uv run python manage.py create_superadmin
 
+    echo "[entrypoint] Collecting static files..."
+    uv run python manage.py collectstatic --noinput
+
     echo "[entrypoint] Starting Gunicorn..."
     exec uv run gunicorn config.wsgi:application \
       --bind 0.0.0.0:8000 \
