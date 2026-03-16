@@ -85,7 +85,7 @@ jobs:
         run: uv run pytest --cov=. --cov-report=xml
 
   build-scan-push:
-    # needs: test
+    needs: test
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     steps:
