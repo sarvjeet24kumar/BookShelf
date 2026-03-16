@@ -85,7 +85,7 @@ jobs:
         run: uv run pytest --cov=. --cov-report=xml
 
   build-scan-push:
-    # needs: test
+    needs: test
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     steps:
@@ -129,13 +129,11 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: PROD_ENV_FILE
           script: |
             cd /home/ubuntu/django-app
             # Create/overwrite .env file with secrets
-            echo "$PROD_ENV_FILE" > .env
+            echo '${{ secrets.PROD_ENV_FILE }}' > /home/ubuntu/django-app/.env
             docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest
             DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest docker compose up -d --force-recreate
-        env:
-          PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
+

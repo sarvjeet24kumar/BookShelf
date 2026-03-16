@@ -14,6 +14,9 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 # Set working directory
 WORKDIR /app
 
+# Download AWS RDS Global Bundle for secure DB connections
+RUN curl -sS https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -o global-bundle.pem
+
 # Copy dependency files
 COPY pyproject.toml uv.lock ./
 
