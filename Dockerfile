@@ -24,6 +24,9 @@ RUN uv sync --frozen --no-cache --no-dev
 # Copy the rest of the application code
 COPY . .
 
+# Ensure entrypoint script is executable
+RUN chmod +x /app/scripts/entrypoint.sh
+
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -41,5 +44,8 @@ RUN SECRET_KEY=build-only-key \
 # Expose the API port
 EXPOSE 8000
 
-# Default command: Gunicorn
-CMD ["uv", "run", "gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "120"]
+# Use the entrypoint script
+ENTRYPOINT ["/app/scripts/entrypoint.sh"]
+
+# Default to starting the web service
+CMD ["web"]

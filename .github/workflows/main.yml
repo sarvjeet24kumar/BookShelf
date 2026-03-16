@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ feat/test-cicd ]
+    branches: [ main, feat/test-cicd ,feat/testcase]
   pull_request:
-    branches: [ feat/test-cicd ]
+    branches: [ main, feat/test-cicd ,feat/testcase]
 
 jobs:
   test:
@@ -64,6 +64,14 @@ jobs:
       - name: Set up Python
         run: uv python install
 
+      - name: Cache uv dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
       - name: Install dependencies
         run: uv sync --all-groups
 
@@ -73,11 +81,11 @@ jobs:
       - name: Create Superadmin
         run: uv run python manage.py create_superadmin
 
-      - name: Run Tests
-        run: uv run pytest
+      - name: Run Tests with Coverage
+        run: uv run pytest --cov=. --cov-report=xml
 
   build-scan-push:
-    # needs: test
+    needs: test
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     steps:
@@ -105,11 +113,15 @@ jobs:
       - name: Push to Docker Hub
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:${{ github.sha }}
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest
+          # Use feat/test-cicd as the 'stable' branch for now
+          if [ "${{ github.ref }}" == "refs/heads/feat/test-cicd" ]; then
+            docker push ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest
+          fi
 
   deploy:
     needs: build-scan-push
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/feat/test-cicd'
     steps:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.7
@@ -117,10 +129,13 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: PROD_ENV_FILE
           script: |
             cd /home/ubuntu/django-app
-            git fetch origin feat/test-cicd
-            git reset --hard origin/feat/test-cicd
+            # Create/overwrite .env file with secrets
+            echo "$PROD_ENV_FILE" > .env
             docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest
             DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest docker compose up -d --force-recreate
+        env:
+          PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}

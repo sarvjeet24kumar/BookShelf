@@ -15,19 +15,15 @@ services:
     env_file:
       - .env
     environment:
+      - SERVICE=web
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=${DOCKER_REDIS_URL}
       - CELERY_BROKER_URL=${DOCKER_CELERY_BROKER_URL}
       - CELERY_RESULT_BACKEND=${DOCKER_CELERY_RESULT_BACKEND}
-      - DJANGO_SETTINGS_MODULE=config.settings.prod
     volumes:
       - static_files:/app/staticfiles
     expose:
       - "8000"
-    command: >
-      sh -c "uv run python manage.py migrate --no-input &&
-             uv run python manage.py create_superadmin &&
-             uv run gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"
 
   nginx:
     image: nginx:alpine
@@ -50,12 +46,11 @@ services:
     env_file:
       - .env
     environment:
+      - SERVICE=celery_worker
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=${DOCKER_REDIS_URL}
       - CELERY_BROKER_URL=${DOCKER_CELERY_BROKER_URL}
       - CELERY_RESULT_BACKEND=${DOCKER_CELERY_RESULT_BACKEND}
-      - DJANGO_SETTINGS_MODULE=config.settings.prod
-    command: uv run celery -A config worker --loglevel=info
 
   beat:
     build: .
@@ -66,12 +61,11 @@ services:
     env_file:
       - .env
     environment:
+      - SERVICE=celery_beat
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=${DOCKER_REDIS_URL}
       - CELERY_BROKER_URL=${DOCKER_CELERY_BROKER_URL}
       - CELERY_RESULT_BACKEND=${DOCKER_CELERY_RESULT_BACKEND}
-      - DJANGO_SETTINGS_MODULE=config.settings.prod
-    command: uv run celery -A config beat --loglevel=info
 
 volumes:
   static_files:
