@@ -114,14 +114,14 @@ jobs:
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:${{ github.sha }}
           # Use feat/test-cicd as the 'stable' branch for now
-          if [ "${{ github.ref }}" == "refs/heads/feat/test-cicd" ]; then
+          if [ "${{ github.ref }}" == "refs/heads/feat/test-cicd" ] || [ "${{ github.ref }}" == "refs/heads/feat/testcase" ]; then
             docker push ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest
           fi
 
   deploy:
     needs: build-scan-push
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/feat/test-cicd'
+    if: github.ref == 'refs/heads/feat/test-cicd' || github.ref == 'refs/heads/feat/testcase'
     steps:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.7

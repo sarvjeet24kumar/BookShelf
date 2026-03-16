@@ -3,6 +3,8 @@ build/
 dist/
 wheels/
 *.log
+*.log*
+logs/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -23,3 +25,6 @@ celerybeat-schedule-wal
 celerybeat.pid
 # Redis
 dump.rdb.DS_Store
+
+*.pem
+burial
