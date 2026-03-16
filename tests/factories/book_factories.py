@@ -6,6 +6,7 @@ from tests.factories.account_factories import TenantFactory, UserFactory
 import random
 import string
 
+
 class GenreFactory(DjangoModelFactory):
     class Meta:
         model = Genre
@@ -20,13 +21,15 @@ class BookFactory(DjangoModelFactory):
         skip_postgeneration_save = True
 
     tenant = factory.SubFactory(TenantFactory)
-    created_by = factory.SubFactory(UserFactory, tenant=factory.SelfAttribute('..tenant'))
+    created_by = factory.SubFactory(
+        UserFactory, tenant=factory.SelfAttribute("..tenant")
+    )
     title = factory.Faker("sentence", nb_words=3)
     author = factory.Faker("name")
     published_year = factory.Faker("random_int", min=1900, max=2024)
     request_status = RequestStatus.APPROVED
 
-    isbn = factory.Faker("numerify", text="#############") # 13 digits
+    isbn = factory.Faker("numerify", text="#############")  # 13 digits
 
     @factory.post_generation
     def genres(self, create, extracted, **kwargs):
@@ -50,7 +53,9 @@ class UserBookFactory(DjangoModelFactory):
         model = UserBook
 
     user = factory.SubFactory(UserFactory)
-    book = factory.SubFactory(BookFactory, tenant=factory.SelfAttribute('..user.tenant'))
+    book = factory.SubFactory(
+        BookFactory, tenant=factory.SelfAttribute("..user.tenant")
+    )
     status = BookStatus.READING
 
     class Params:

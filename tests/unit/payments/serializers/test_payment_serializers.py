@@ -3,8 +3,9 @@ from payments.serializers import (
     PaymentOrderResponseSerializer,
     WebhookEventSerializer,
     SubscriptionAdminSerializer,
-    PaymentAdminSerializer
+    PaymentAdminSerializer,
 )
+
 
 class TestPaymentSerializersUnit:
     """Unit tests for payment serializers."""
@@ -16,7 +17,7 @@ class TestPaymentSerializersUnit:
             "razorpay_order_id": order_id,
             "amount": 50000,
             "currency": "INR",
-            "status": "created"
+            "status": "created",
         }
         serializer = PaymentOrderResponseSerializer(data=data)
         assert serializer.is_valid()
@@ -29,7 +30,7 @@ class TestPaymentSerializersUnit:
         data = {
             "id": event_id,
             "event": "order.paid",
-            "payload": {"order_id": order_id}
+            "payload": {"order_id": order_id},
         }
         serializer = WebhookEventSerializer(data=data)
         assert serializer.is_valid()

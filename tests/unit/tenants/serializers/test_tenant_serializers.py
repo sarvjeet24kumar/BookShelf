@@ -1,6 +1,7 @@
 import pytest
 from tenants.serializers.tenant_serializers import TenantSerializer
 
+
 @pytest.mark.django_db
 class TestTenantSerializerUnit:
     """Unit tests for TenantSerializer validation."""
@@ -19,7 +20,7 @@ class TestTenantSerializerUnit:
             "id": 999,
             "name": fake_data.company(),
             "slug": fake_data.slug(),
-            "created_at": "2021-01-01T00:00:00Z"
+            "created_at": "2021-01-01T00:00:00Z",
         }
         serializer = TenantSerializer(data=data)
         assert serializer.is_valid()

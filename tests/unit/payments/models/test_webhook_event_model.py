@@ -1,6 +1,7 @@
 import pytest
 from payments.models.webhook_event import WebhookEvent
 
+
 @pytest.mark.django_db
 class TestWebhookEventModelUnit:
     """Unit tests for WebhookEvent model."""

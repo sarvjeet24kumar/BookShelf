@@ -1,4 +1,5 @@
 """Unit tests for LogoutView — all dependencies mocked."""
+
 import pytest
 from unittest.mock import patch, MagicMock
 from rest_framework import status
@@ -24,7 +25,14 @@ class TestLogoutView:
     @patch("accounts.views.logout_view.AccessToken")
     @patch("accounts.views.logout_view.cache")
     def test_logout_success(
-        self, mock_cache, MockAccessToken, MockRefreshToken, view, factory, mock_user, fake_data
+        self,
+        mock_cache,
+        MockAccessToken,
+        MockRefreshToken,
+        view,
+        factory,
+        mock_user,
+        fake_data,
     ):
         """Valid access + refresh tokens should blacklist both and succeed."""
         jti = fake_data.uuid4()
@@ -38,7 +46,7 @@ class TestLogoutView:
         request = factory.post(
             "/api/v1/auth/logout/",
             {"refresh": fake_data.sha256()},
-            HTTP_AUTHORIZATION=f"Bearer {fake_data.sha256()}"
+            HTTP_AUTHORIZATION=f"Bearer {fake_data.sha256()}",
         )
         force_authenticate(request, user=mock_user)
         response = view(request)
@@ -51,8 +59,7 @@ class TestLogoutView:
     def test_logout_missing_refresh_token(self, view, factory, mock_user):
         """Missing refresh token should return 400."""
         request = factory.post(
-            "/api/v1/auth/logout/", {},
-            HTTP_AUTHORIZATION="Bearer access_token_123"
+            "/api/v1/auth/logout/", {}, HTTP_AUTHORIZATION="Bearer access_token_123"
         )
         force_authenticate(request, user=mock_user)
         response = view(request)
@@ -64,29 +71,47 @@ class TestLogoutView:
         request = factory.post("/api/v1/auth/logout/", {"refresh": "any"})
         response = view(request)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-        assert "Authentication credentials were not provided" in str(response.data["error"]["message"])
+        assert "Authentication credentials were not provided" in str(
+            response.data["error"]["message"]
+        )
 
     @patch("accounts.views.logout_view.RefreshToken")
     def test_logout_invalid_token(self, MockToken, view, factory, mock_user):
         """Invalid token should return 401."""
-        from rest_framework_simplejwt.exceptions import TokenError
+
         MockToken.side_effect = TokenError("Token is invalid or expired")
 
-        request = factory.post("/api/v1/auth/logout/", {"refresh": "invalid"}, HTTP_AUTHORIZATION="Bearer valid_access_token")
+        request = factory.post(
+            "/api/v1/auth/logout/",
+            {"refresh": "invalid"},
+            HTTP_AUTHORIZATION="Bearer valid_access_token",
+        )
         force_authenticate(request, user=mock_user)
         response = view(request)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "Invalid or expired refresh token" in str(response.data["error"]["details"])
+        assert "Invalid or expired refresh token" in str(
+            response.data["error"]["details"]
+        )
 
     @patch("accounts.views.logout_view.RefreshToken")
     @patch("accounts.views.logout_view.AccessToken")
     @patch("accounts.views.logout_view.cache")
     def test_logout_invalid_refresh_token(
-        self, mock_cache, MockAccessToken, MockRefreshToken, view, factory, mock_user, fake_data
+        self,
+        mock_cache,
+        MockAccessToken,
+        MockRefreshToken,
+        view,
+        factory,
+        mock_user,
+        fake_data,
     ):
         """Invalid/expired refresh token should return 400."""
         mock_access = MagicMock()
-        mock_access.get.side_effect = lambda k: {"jti": fake_data.uuid4(), "exp": 9999999999}[k]
+        mock_access.get.side_effect = lambda k: {
+            "jti": fake_data.uuid4(),
+            "exp": 9999999999,
+        }[k]
         MockAccessToken.return_value = mock_access
 
         MockRefreshToken.side_effect = TokenError("Token is invalid.")
@@ -94,18 +119,27 @@ class TestLogoutView:
         request = factory.post(
             "/api/v1/auth/logout/",
             {"refresh": fake_data.sha256()},
-            HTTP_AUTHORIZATION=f"Bearer {fake_data.sha256()}"
+            HTTP_AUTHORIZATION=f"Bearer {fake_data.sha256()}",
         )
         force_authenticate(request, user=mock_user)
         response = view(request)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "Invalid or expired refresh token" in str(response.data["error"]["details"])
+        assert "Invalid or expired refresh token" in str(
+            response.data["error"]["details"]
+        )
 
     @patch("accounts.views.logout_view.AccessToken")
     @patch("accounts.views.logout_view.RefreshToken")
     @patch("accounts.views.logout_view.cache")
     def test_logout_expired_access_still_blacklists_refresh(
-        self, mock_cache, MockRefreshToken, MockAccessToken, view, factory, mock_user, fake_data
+        self,
+        mock_cache,
+        MockRefreshToken,
+        MockAccessToken,
+        view,
+        factory,
+        mock_user,
+        fake_data,
     ):
         """Expired access token should be caught, but refresh still blacklisted."""
         MockAccessToken.side_effect = TokenError("Token expired")
@@ -115,7 +149,7 @@ class TestLogoutView:
         request = factory.post(
             "/api/v1/auth/logout/",
             {"refresh": fake_data.sha256()},
-            HTTP_AUTHORIZATION=f"Bearer {fake_data.sha256()}"
+            HTTP_AUTHORIZATION=f"Bearer {fake_data.sha256()}",
         )
         force_authenticate(request, user=mock_user)
         response = view(request)

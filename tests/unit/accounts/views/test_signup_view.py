@@ -1,10 +1,10 @@
 """Unit tests for SignupView — all dependencies mocked."""
+
 import pytest
 from unittest.mock import patch, MagicMock
 from rest_framework import status
 from rest_framework.test import APIRequestFactory
 from accounts.views.registration_views import SignupView
-
 
 
 @pytest.fixture
@@ -25,8 +25,15 @@ class TestSignupView:
     @patch("accounts.views.registration_views.SignupSerializer")
     @patch("accounts.views.registration_views.get_tenant_from_header")
     def test_signup_success(
-        self, mock_get_tenant, MockSerializer, MockUser, mock_email_svc,
-        view, factory, mock_tenant, fake_data
+        self,
+        mock_get_tenant,
+        MockSerializer,
+        MockUser,
+        mock_email_svc,
+        view,
+        factory,
+        mock_tenant,
+        fake_data,
     ):
         """Valid signup data with no duplicate email should create user and send OTP."""
         mock_get_tenant.return_value = mock_tenant
@@ -55,7 +62,14 @@ class TestSignupView:
     @patch("accounts.views.registration_views.SignupSerializer")
     @patch("accounts.views.registration_views.get_tenant_from_header")
     def test_signup_duplicate_email(
-        self, mock_get_tenant, MockSerializer, MockUser, view, factory, mock_tenant, fake_data
+        self,
+        mock_get_tenant,
+        MockSerializer,
+        MockUser,
+        view,
+        factory,
+        mock_tenant,
+        fake_data,
     ):
         """Duplicate email in same tenant should return 400."""
         mock_get_tenant.return_value = mock_tenant
@@ -74,16 +88,19 @@ class TestSignupView:
 
     # Removed @patch("accounts.views.registration_views.SignupSerializer")
     def test_signup_invalid_data(
-        self, view, factory, mock_tenant # Modified parameters
+        self, view, factory, mock_tenant  # Modified parameters
     ):
         """Invalid data should return 400."""
         # Removed from rest_framework.exceptions import ValidationError and serializer mocking
-        request = factory.post("/api/v1/auth/signup/", { # Modified request data
-            "email": "invalid-email",
-            "password": "short",
-            "username": ""
-        })
-        response = view(request) # Changed 'view' to 'signup_view'
+        request = factory.post(
+            "/api/v1/auth/signup/",
+            {  # Modified request data
+                "email": "invalid-email",
+                "password": "short",
+                "username": "",
+            },
+        )
+        response = view(request)  # Changed 'view' to 'signup_view'
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "error" in response.data # Modified assertion
-        assert "details" in response.data["error"] # Modified assertion
+        assert "error" in response.data  # Modified assertion
+        assert "details" in response.data["error"]  # Modified assertion

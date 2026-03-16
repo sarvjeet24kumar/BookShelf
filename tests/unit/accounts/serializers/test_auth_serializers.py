@@ -1,9 +1,14 @@
 import pytest
-from accounts.serializers.auth_serializers import SignupSerializer, LoginSerializer, ChangePasswordSerializer
+from accounts.serializers.auth_serializers import (
+    SignupSerializer,
+    LoginSerializer,
+    ChangePasswordSerializer,
+)
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 User = get_user_model()
+
 
 @pytest.mark.django_db
 class TestSignupSerializerUnit:
@@ -14,15 +19,17 @@ class TestSignupSerializerUnit:
         data = {
             "username": fake_data.user_name(),
             "email": fake_data.email(),
-            "password": fake_data.password(special_chars=True),
+            "password": "ValidPassword123!",
             "password_confirm": "Mismatched@123",
             "first_name": fake_data.first_name(),
             "last_name": fake_data.last_name(),
-            "phone_no": f"+91{fake_data.msisdn()[:10]}"
+            "phone_no": f"+91{fake_data.msisdn()[:10]}",
         }
         serializer = SignupSerializer(data=data)
         assert not serializer.is_valid()
-        assert "Passwords don't match" in str(serializer.errors.get("non_field_errors", []))
+        assert "Passwords don't match" in str(
+            serializer.errors.get("non_field_errors", [])
+        )
 
     def test_duplicate_username_validation(self, user_factory, fake_data):
         """Test that duplicate username raises ValidationError."""
@@ -36,7 +43,7 @@ class TestSignupSerializerUnit:
             "password_confirm": password,
             "first_name": fake_data.first_name(),
             "last_name": fake_data.last_name(),
-            "phone_no": f"+91{fake_data.msisdn()[:10]}"
+            "phone_no": f"+91{fake_data.msisdn()[:10]}",
         }
         serializer = SignupSerializer(data=data)
         assert not serializer.is_valid()
@@ -51,18 +58,22 @@ class TestLoginSerializerUnit:
         data = {
             "email": fake_data.email(),
             "username": fake_data.user_name(),
-            "password": fake_data.password()
+            "password": fake_data.password(),
         }
         serializer = LoginSerializer(data=data)
         assert not serializer.is_valid()
-        assert "Provide either email or username, not both" in str(serializer.errors.get("non_field_errors", []))
+        assert "Provide either email or username, not both" in str(
+            serializer.errors.get("non_field_errors", [])
+        )
 
     def test_neither_email_nor_username_fails(self, fake_data):
         """Test providing neither email nor username raises ValidationError."""
         data = {"password": fake_data.password()}
         serializer = LoginSerializer(data=data)
         assert not serializer.is_valid()
-        assert "Email or username is required" in str(serializer.errors.get("non_field_errors", []))
+        assert "Email or username is required" in str(
+            serializer.errors.get("non_field_errors", [])
+        )
 
 
 class TestChangePasswordSerializerUnit:
@@ -73,11 +84,13 @@ class TestChangePasswordSerializerUnit:
         data = {
             "current_password": "OldPassword123!",
             "new_password": "NewPassword123!",
-            "confirm_password": "Mismatched@123"
+            "confirm_password": "Mismatched@123",
         }
         serializer = ChangePasswordSerializer(data=data)
         assert not serializer.is_valid()
-        assert "New passwords don't match" in str(serializer.errors.get("confirm_password", []))
+        assert "New passwords don't match" in str(
+            serializer.errors.get("confirm_password", [])
+        )
 
     def test_new_password_same_as_current(self, fake_data):
         """Test that new password same as current raises ValidationError."""
@@ -86,8 +99,10 @@ class TestChangePasswordSerializerUnit:
         data = {
             "current_password": password,
             "new_password": password,
-            "confirm_password": password
+            "confirm_password": password,
         }
         serializer = ChangePasswordSerializer(data=data)
         assert not serializer.is_valid()
-        assert "must be different from current password" in str(serializer.errors.get("new_password", []))
+        assert "must be different from current password" in str(
+            serializer.errors.get("new_password", [])
+        )

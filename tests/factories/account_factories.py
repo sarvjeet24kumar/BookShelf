@@ -34,24 +34,32 @@ class UserFactory(DjangoModelFactory):
         obj.set_password(pw)
         if create:
             obj.save()
+
     is_active = True
     is_email_verified = True
 
-    username = factory.LazyAttribute(lambda o: factory.Faker("lexify", text="u?????????").evaluate(None, None, {'locale': None}).lower())
+    username = factory.LazyAttribute(
+        lambda o: factory.Faker("lexify", text="u?????????")
+        .evaluate(None, None, {"locale": None})
+        .lower()
+    )
 
     phone_no = factory.Faker("numerify", text="+91##########")
 
     class Params:
         is_admin = factory.Trait(
             role=UserRole.ADMIN,
-            username=factory.LazyAttribute(lambda o: ("a" + o.first_name.lower() + "adm")[:30])
+            username=factory.LazyAttribute(
+                lambda o: ("a" + o.first_name.lower() + "adm")[:30]
+            ),
         )
         is_super_admin = factory.Trait(
             role=UserRole.SUPER_ADMIN,
             tenant=None,
             is_email_verified=True,
-            username=factory.LazyAttribute(lambda o: ("s" + o.first_name.lower() + "sup")[:30])
+            username=factory.LazyAttribute(
+                lambda o: ("s" + o.first_name.lower() + "sup")[:30]
+            ),
         )
         unverified = factory.Trait(is_email_verified=False)
         suspended = factory.Trait(is_active=False)
-

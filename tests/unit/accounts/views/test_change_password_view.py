@@ -1,8 +1,10 @@
 """Unit tests for ChangePasswordView — all dependencies mocked."""
+
 import pytest
 from unittest.mock import patch, MagicMock
 from rest_framework import status
 from rest_framework.test import APIRequestFactory, force_authenticate
+from rest_framework.exceptions import ValidationError
 from accounts.views.change_password_view import ChangePasswordView
 
 
@@ -29,7 +31,7 @@ class TestChangePasswordView:
         new_password = fake_data.password(special_chars=True)
         mock_ser.validated_data = {
             "current_password": fake_data.password(),
-            "new_password": new_password
+            "new_password": new_password,
         }
         mock_user.check_password.return_value = True
 
@@ -51,7 +53,7 @@ class TestChangePasswordView:
         mock_ser.is_valid.return_value = True
         mock_ser.validated_data = {
             "current_password": fake_data.password(),
-            "new_password": fake_data.password()
+            "new_password": fake_data.password(),
         }
         mock_user.check_password.return_value = False
 
@@ -66,7 +68,7 @@ class TestChangePasswordView:
         self, MockSerializer, view, factory, mock_user
     ):
         """Invalid serializer data should return 400."""
-        from rest_framework.exceptions import ValidationError
+
         mock_ser = MockSerializer.return_value
         mock_ser.is_valid.side_effect = ValidationError({"new_password": ["Too weak."]})
 

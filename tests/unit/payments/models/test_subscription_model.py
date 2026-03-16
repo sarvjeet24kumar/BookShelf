@@ -3,6 +3,7 @@ from payments.models.subscription import Subscription
 from common.enums import SubscriptionStatus, PaymentStatus, SubscriptionPlan
 from django.utils import timezone
 
+
 @pytest.mark.django_db
 class TestSubscriptionModelUnit:
     """Unit tests for Subscription model and its methods."""

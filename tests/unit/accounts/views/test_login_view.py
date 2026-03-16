@@ -1,4 +1,5 @@
 """Unit tests for LoginView — all dependencies mocked."""
+
 import pytest
 from unittest.mock import patch, MagicMock
 from rest_framework import status
@@ -16,7 +17,14 @@ def factory():
     return APIRequestFactory()
 
 
-def _setup_login_mocks(MockSerializer, mock_get_tenant, mock_tenant, email=None, password=None, fake_data=None):
+def _setup_login_mocks(
+    MockSerializer,
+    mock_get_tenant,
+    mock_tenant,
+    email=None,
+    password=None,
+    fake_data=None,
+):
     """Helper to set up common login mocks."""
     mock_get_tenant.return_value = mock_tenant
     mock_ser = MockSerializer.return_value
@@ -24,7 +32,7 @@ def _setup_login_mocks(MockSerializer, mock_get_tenant, mock_tenant, email=None,
     mock_ser.validated_data = {
         "email": email or fake_data.email(),
         "username": None,
-        "password": password or fake_data.password(special_chars=True)
+        "password": password or fake_data.password(special_chars=True),
     }
     return mock_ser
 
@@ -38,11 +46,26 @@ class TestLoginView:
     @patch("accounts.views.authentication_views.get_tenant_from_header")
     @patch("accounts.views.authentication_views.LoginSerializer")
     def test_login_success_sends_otp(
-        self, MockSerializer, mock_get_tenant, mock_find_user,
-        mock_authenticate, mock_otp_service, view, factory, mock_user, mock_tenant, fake_data
+        self,
+        MockSerializer,
+        mock_get_tenant,
+        mock_find_user,
+        mock_authenticate,
+        mock_otp_service,
+        view,
+        factory,
+        mock_user,
+        mock_tenant,
+        fake_data,
     ):
         """Valid credentials should trigger OTP creation."""
-        _setup_login_mocks(MockSerializer, mock_get_tenant, mock_tenant, email=mock_user.email, fake_data=fake_data)
+        _setup_login_mocks(
+            MockSerializer,
+            mock_get_tenant,
+            mock_tenant,
+            email=mock_user.email,
+            fake_data=fake_data,
+        )
         mock_find_user.return_value = mock_user
         mock_authenticate.return_value = mock_user
 
@@ -50,17 +73,28 @@ class TestLoginView:
         response = view(request)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["detail"] == "OTP sent to your email. Please verify to login."
+        assert (
+            response.data["detail"] == "OTP sent to your email. Please verify to login."
+        )
         mock_otp_service.create.assert_called_once()
 
     @patch("accounts.views.authentication_views.find_user")
     @patch("accounts.views.authentication_views.get_tenant_from_header")
     @patch("accounts.views.authentication_views.LoginSerializer")
     def test_login_user_not_found(
-        self, MockSerializer, mock_get_tenant, mock_find_user, view, factory, mock_tenant, fake_data
+        self,
+        MockSerializer,
+        mock_get_tenant,
+        mock_find_user,
+        view,
+        factory,
+        mock_tenant,
+        fake_data,
     ):
         """Non-existent user should return 401."""
-        _setup_login_mocks(MockSerializer, mock_get_tenant, mock_tenant, fake_data=fake_data)
+        _setup_login_mocks(
+            MockSerializer, mock_get_tenant, mock_tenant, fake_data=fake_data
+        )
         mock_find_user.return_value = None
 
         request = factory.post("/api/v1/auth/login/", {})
@@ -70,34 +104,45 @@ class TestLoginView:
 
     @patch("accounts.views.authentication_views.find_user")
     @patch("accounts.views.authentication_views.get_tenant_from_header")
-    def test_login_deleted_user(self, mock_get_tenant, mock_find_user, view, factory, mock_tenant):
+    def test_login_deleted_user(
+        self, mock_get_tenant, mock_find_user, view, factory, mock_tenant
+    ):
         """Deleted user should get 401."""
         mock_user = MagicMock()
         mock_user.deleted_at = "2023-01-01"
         mock_find_user.return_value = mock_user
 
-        request = factory.post("/api/v1/auth/login/", {"email": "deleted@example.com", "password": "any"})
+        request = factory.post(
+            "/api/v1/auth/login/", {"email": "deleted@example.com", "password": "any"}
+        )
         response = view(request)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert "account has been deleted" in response.data["error"]["message"]
 
     @patch("accounts.views.authentication_views.find_user")
     @patch("accounts.views.authentication_views.get_tenant_from_header")
-    def test_login_unverified_email(self, mock_get_tenant, mock_find_user, view, factory, mock_tenant):
+    def test_login_unverified_email(
+        self, mock_get_tenant, mock_find_user, view, factory, mock_tenant
+    ):
         """Unverified email user should get 401."""
         mock_user = MagicMock()
         mock_user.deleted_at = None
         mock_user.is_email_verified = False
         mock_find_user.return_value = mock_user
 
-        request = factory.post("/api/v1/auth/login/", {"email": "unverified@example.com", "password": "any"})
+        request = factory.post(
+            "/api/v1/auth/login/",
+            {"email": "unverified@example.com", "password": "any"},
+        )
         response = view(request)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert "verify your email" in response.data["error"]["message"]
 
     @patch("accounts.views.authentication_views.find_user")
     @patch("accounts.views.authentication_views.get_tenant_from_header")
-    def test_login_inactive_user(self, mock_get_tenant, mock_find_user, view, factory, mock_tenant):
+    def test_login_inactive_user(
+        self, mock_get_tenant, mock_find_user, view, factory, mock_tenant
+    ):
         """Suspended user should get 401."""
         mock_user = MagicMock()
         mock_user.deleted_at = None
@@ -105,7 +150,9 @@ class TestLoginView:
         mock_user.is_active = False
         mock_find_user.return_value = mock_user
 
-        request = factory.post("/api/v1/auth/login/", {"email": "inactive@example.com", "password": "any"})
+        request = factory.post(
+            "/api/v1/auth/login/", {"email": "inactive@example.com", "password": "any"}
+        )
         response = view(request)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert "account has been suspended" in response.data["error"]["message"]
@@ -113,7 +160,15 @@ class TestLoginView:
     @patch("accounts.views.authentication_views.authenticate")
     @patch("accounts.views.authentication_views.find_user")
     @patch("accounts.views.authentication_views.get_tenant_from_header")
-    def test_login_wrong_password(self, mock_get_tenant, mock_find_user, mock_authenticate, view, factory, mock_tenant):
+    def test_login_wrong_password(
+        self,
+        mock_get_tenant,
+        mock_find_user,
+        mock_authenticate,
+        view,
+        factory,
+        mock_tenant,
+    ):
         """Wrong password should return 401."""
         mock_user = MagicMock()
         mock_user.deleted_at = None
@@ -122,7 +177,9 @@ class TestLoginView:
         mock_find_user.return_value = mock_user
         mock_authenticate.return_value = None
 
-        request = factory.post("/api/v1/auth/login/", {"email": "user@example.com", "password": "wrong"})
+        request = factory.post(
+            "/api/v1/auth/login/", {"email": "user@example.com", "password": "wrong"}
+        )
         response = view(request)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert response.data["error"]["message"] == "Invalid credentials."

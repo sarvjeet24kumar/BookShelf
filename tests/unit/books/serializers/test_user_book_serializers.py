@@ -1,6 +1,10 @@
 import pytest
-from books.serializers.user_book_serializers import UserBookAddSerializer, UserBookUpdateSerializer
+from books.serializers.user_book_serializers import (
+    UserBookAddSerializer,
+    UserBookUpdateSerializer,
+)
 from common.enums import BookStatus
+
 
 class TestUserBookSerializersUnit:
     """Unit tests for UserBook serializers."""

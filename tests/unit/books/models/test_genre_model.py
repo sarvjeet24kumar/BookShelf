@@ -1,6 +1,7 @@
 import pytest
 from books.models.genre import Genre
 
+
 @pytest.mark.django_db
 class TestGenreModelUnit:
     """Unit tests for Genre model."""

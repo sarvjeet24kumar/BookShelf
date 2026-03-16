@@ -1,9 +1,11 @@
 """Unit tests for TenantListCreateView and TenantDetailView — all dependencies mocked."""
+
 import pytest
 import uuid
 from unittest.mock import patch, MagicMock
 from rest_framework import status
 from rest_framework.test import APIRequestFactory, force_authenticate
+from tenants.models import Tenant as RealTenant
 from tenants.views.tenant_views import TenantListCreateView, TenantDetailView
 from common.enums import UserRole
 
@@ -82,12 +84,14 @@ class TestTenantListCreateView:
         mock_tenant = MagicMock()
         mock_tenant.slug = tenant_slug
         mock_create_ser.save.return_value = mock_tenant
- 
+
         mock_response_ser = MockSer.return_value
         mock_data = {"name": tenant_name, "slug": tenant_slug}
         mock_response_ser.data = mock_data
- 
-        request = factory.post("/api/v1/tenants/", {"name": tenant_name, "slug": tenant_slug})
+
+        request = factory.post(
+            "/api/v1/tenants/", {"name": tenant_name, "slug": tenant_slug}
+        )
         force_authenticate(request, user=mock_super_admin)
         response = list_view(request)
         assert response.status_code == status.HTTP_201_CREATED
@@ -100,16 +104,22 @@ class TestTenantDetailView:
     @patch("tenants.views.tenant_views.Tenant")
     @patch("tenants.views.tenant_views.TenantDetailSerializer")
     def test_get_tenant_as_superadmin(
-        self, MockSerializer, MockTenant, detail_view, factory, mock_super_admin, fake_data
+        self,
+        MockSerializer,
+        MockTenant,
+        detail_view,
+        factory,
+        mock_super_admin,
+        fake_data,
     ):
         """Super admin should retrieve any tenant."""
         mock_t = MagicMock()
         MockTenant.all_objects.get.return_value = mock_t
- 
+
         mock_ser = MockSerializer.return_value
         mock_data = {"name": fake_data.company()}
         mock_ser.data = mock_data
- 
+
         request = factory.get("/api/v1/tenants/1/")
         force_authenticate(request, user=mock_super_admin)
         response = detail_view(request, id="1")
@@ -117,9 +127,11 @@ class TestTenantDetailView:
         assert response.data == mock_data
 
     @patch("tenants.views.tenant_views.Tenant")
-    def test_get_tenant_not_found(self, MockTenant, detail_view, factory, mock_super_admin):
+    def test_get_tenant_not_found(
+        self, MockTenant, detail_view, factory, mock_super_admin
+    ):
         """Non-existent tenant should return 404."""
-        from tenants.models import Tenant as RealTenant
+
         MockTenant.DoesNotExist = RealTenant.DoesNotExist
         MockTenant.all_objects.get.side_effect = RealTenant.DoesNotExist
 
@@ -129,21 +141,35 @@ class TestTenantDetailView:
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.data["error"]["message"] == "Tenant not found."
 
-    def test_tenant_admin_cannot_access_other_tenant(self, detail_view, factory, mock_admin):
+    def test_tenant_admin_cannot_access_other_tenant(
+        self, detail_view, factory, mock_admin
+    ):
         """Admin should get 403 when accessing another tenant."""
         other_tenant = MagicMock()
         other_tenant.id = "other-tenant-id"
         mock_admin.tenant_id = "my-tenant-id"
 
-        with patch("tenants.views.tenant_views.TenantListCreateView.get_permissions", return_value=[]):
-            with patch("tenants.views.tenant_views.Tenant.all_objects.get", return_value=other_tenant):
+        with patch(
+            "tenants.views.tenant_views.TenantListCreateView.get_permissions",
+            return_value=[],
+        ):
+            with patch(
+                "tenants.views.tenant_views.Tenant.all_objects.get",
+                return_value=other_tenant,
+            ):
                 request = factory.get(f"/api/v1/tenants/{other_tenant.id}/")
                 force_authenticate(request, user=mock_admin)
                 response = detail_view(request, id=other_tenant.id)
                 assert response.status_code == status.HTTP_403_FORBIDDEN
-                assert response.data["error"]["message"] == "You can only access your own tenant."
+                assert (
+                    response.data["error"]["message"]
+                    == "You can only access your own tenant."
+                )
+
     @patch("tenants.views.tenant_views.Tenant")
-    def test_delete_tenant_as_superadmin(self, MockTenant, detail_view, factory, mock_super_admin):
+    def test_delete_tenant_as_superadmin(
+        self, MockTenant, detail_view, factory, mock_super_admin
+    ):
         """Super admin should delete tenant and return 204."""
         mock_t = MagicMock()
         MockTenant.all_objects.get.return_value = mock_t

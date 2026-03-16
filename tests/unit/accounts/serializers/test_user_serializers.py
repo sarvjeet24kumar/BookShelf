@@ -5,6 +5,7 @@ from rest_framework import serializers
 
 User = get_user_model()
 
+
 @pytest.mark.django_db
 class TestUserSerializerUnit:
     """Unit tests for UserSerializer validation logic."""
@@ -19,7 +20,7 @@ class TestUserSerializerUnit:
             "password": fake_data.password(special_chars=True),
             "first_name": fake_data.first_name(),
             "last_name": fake_data.last_name(),
-            "phone_no": f"+91{fake_data.msisdn()[:10]}"
+            "phone_no": f"+91{fake_data.msisdn()[:10]}",
         }
         serializer = UserSerializer(data=data)
         assert not serializer.is_valid()
@@ -35,7 +36,7 @@ class TestUserSerializerUnit:
             "first_name": fake_data.first_name(),
             "last_name": fake_data.last_name(),
             "phone_no": f"+91{fake_data.msisdn()[:10]}",
-            "created_at": "2021-01-01T00:00:00Z"
+            "created_at": "2021-01-01T00:00:00Z",
         }
         serializer = UserSerializer(data=data)
         assert serializer.is_valid()

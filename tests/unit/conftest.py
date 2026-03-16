@@ -1,4 +1,5 @@
 """Shared unit test conftest — mock request, fake data, mock users."""
+
 import uuid
 import pytest
 from unittest.mock import MagicMock, PropertyMock
@@ -12,16 +13,16 @@ from tests.factories.payment_factories import SubscriptionFactory, PaymentFactor
 from common.enums import UserRole
 
 # Global Monkeypatches
-if not hasattr(UserRole, 'SUPERADMIN'):
+if not hasattr(UserRole, "SUPERADMIN"):
     UserRole.SUPERADMIN = UserRole.SUPER_ADMIN
 
 # Disable throttling for tests
-if hasattr(settings, 'REST_FRAMEWORK'):
-    settings.REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
-        'anon': None,
-        'user': None,
-        'ip_throttle': None,
-        'auth_throttle': None,
+if hasattr(settings, "REST_FRAMEWORK"):
+    settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {
+        "anon": None,
+        "user": None,
+        "ip_throttle": None,
+        "auth_throttle": None,
     }
 
 # Register factories
