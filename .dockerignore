@@ -18,5 +18,4 @@ tests/
 locustfile.py
 locust_tokens.txt
 *.lprof
-newrelic.ini
 .silk/

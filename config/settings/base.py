@@ -56,9 +56,6 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "silk.middleware.SilkyMiddleware",
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
-    "pyinstrument.middleware.ProfilerMiddleware",
     "common.middleware.RequestIDMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -71,6 +68,12 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "common.middleware.API404Middleware",
 ]
+
+# Heavy Debug/Profiling Middleware (Disabled during performance tests)
+if not env.bool("LOCUST_PERF_TEST", default=False):
+    MIDDLEWARE.insert(0, "silk.middleware.SilkyMiddleware")
+    MIDDLEWARE.insert(1, "debug_toolbar.middleware.DebugToolbarMiddleware")
+    MIDDLEWARE.insert(2, "pyinstrument.middleware.ProfilerMiddleware")
 
 ROOT_URLCONF = "config.urls"
 
@@ -149,10 +152,10 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": THROTTLE_RATE_ANON,
-        "user": THROTTLE_RATE_USER,
-        "ip_throttle": THROTTLE_RATE_IP,
-        "auth_throttle": THROTTLE_RATE_AUTH,
+        "anon": "10000/minute" if env.bool("LOCUST_PERF_TEST", default=False) else THROTTLE_RATE_ANON,
+        "user": "10000/minute" if env.bool("LOCUST_PERF_TEST", default=False) else THROTTLE_RATE_USER,
+        "ip_throttle": "10000/minute" if env.bool("LOCUST_PERF_TEST", default=False) else THROTTLE_RATE_IP,
+        "auth_throttle": "10000/minute" if env.bool("LOCUST_PERF_TEST", default=False) else THROTTLE_RATE_AUTH,
     },
 }
 
@@ -162,7 +165,7 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=env("JWT_REFRESH_TOKEN_DAYS")),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
-    "UPDATE_LAST_LOGIN": True,
+    "UPDATE_LAST_LOGIN": False if env.bool("LOCUST_PERF_TEST", default=False) else True,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
