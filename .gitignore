@@ -28,3 +28,14 @@ dump.rdb.DS_Store
 
 *.pem
 burial
+
+# Performance & Profiling
+locust_tokens.txt
+locust-log.html
+*.lprof
+.silk/
+newrelic.ini
+htmlcov/
+.coverage
+.cache
+.pytest_cache/

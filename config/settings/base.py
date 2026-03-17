@@ -3,6 +3,7 @@ import os
 import environ
 from pathlib import Path
 from datetime import timedelta
+from config.logging import LOGGING
 from common.constants import (
     THROTTLE_RATE_ANON,
     THROTTLE_RATE_USER,
@@ -51,12 +52,14 @@ INSTALLED_APPS = [
     "tenants",
     "payments",
     "silk",
+    "debug_toolbar",
 ]
 
 MIDDLEWARE = [
+    "silk.middleware.SilkyMiddleware",
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "pyinstrument.middleware.ProfilerMiddleware",
     "common.middleware.RequestIDMiddleware",
-    "silk.middleware.SilkyMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -165,7 +168,7 @@ SIMPLE_JWT = {
 
 SITE_URL = env("SITE_URL", default="http://127.0.0.1:8000")
 
-from config.logging import LOGGING
+
 
 # Razorpay Settings
 RAZORPAY_KEY_ID = env("RAZORPAY_KEY_ID", default="")
@@ -174,3 +177,43 @@ RAZORPAY_WEBHOOK_SECRET = env("RAZORPAY_WEBHOOK_SECRET", default="")
 PREMIUM_PRICE_PAISE = 99900  # ₹999
 USER_DATA_RETENTION_DAYS = env.int("USER_DATA_RETENTION_DAYS", default=30)
 TENANT_DATA_RETENTION_DAYS = env.int("TENANT_DATA_RETENTION_DAYS", default=360)
+
+INTERNAL_IPS = [
+    "127.0.0.1",
+    "::1",
+]
+
+def show_toolbar(request):
+    """Custom function to hide toolbar on specific paths like /silk/"""
+    if not request.path or any(request.path.startswith(p) for p in ["/silk/", "/health/"]):
+        return False
+    from django.conf import settings
+    return settings.DEBUG and request.META.get("REMOTE_ADDR") in settings.INTERNAL_IPS
+
+# Debug Toolbar Configuration (Hide Silk noise)
+DEBUG_TOOLBAR_CONFIG = {
+    "SHOW_TOOLBAR_CALLBACK": "config.settings.base.show_toolbar",
+    "HIDE_IN_STACKTRACES": (
+        "silk",
+        "django.db.backends",
+        "django.core.handlers",
+        "django.core.servers",
+        "django.utils.decorators",
+        "django.utils.deprecation",
+        "django.utils.functional",
+    ),
+    "SHOW_COLLAPSED": True,
+    "IGNORE_SQL_PATTERNS": (
+        r"silk_",
+        r"SAVEPOINT",
+        r"RELEASE SAVEPOINT",
+    ),
+}
+
+# Silence Silk for Admin/Debug pages (using regex patterns)
+SILKY_IGNORE_PATHS = [
+    r"^/admin/",
+    r"^/silk/",
+    r"^/__debug__/",
+    r"^/health/",
+]

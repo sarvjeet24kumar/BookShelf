@@ -2,6 +2,9 @@ from django.contrib import admin
 from django.urls import path, include
 from common.views.health import health_check
 
+from django.conf import settings
+import debug_toolbar
+
 urlpatterns = [
     path("health/", health_check, name="health_check"),
     path("admin/", admin.site.urls),
@@ -12,6 +15,11 @@ urlpatterns = [
     path("silk/", include("silk.urls", namespace="silk")),
 ]
 
+if settings.DEBUG:
+
+    urlpatterns += [
+        path("__debug__/", include(debug_toolbar.urls)),
+    ]
 
 handler404 = "common.exceptions.handler404"
 handler500 = "common.exceptions.handler500"
