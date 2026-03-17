@@ -22,6 +22,7 @@ dependencies = [
     "razorpay>=2.0.0",
     "redis>=7.1.0",
     "uuid6>=2025.0.1",
+    "newrelic>=9.0.0",
 ]
 
 [dependency-groups]

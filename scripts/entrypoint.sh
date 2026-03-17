@@ -14,8 +14,9 @@ if [ "$SERVICE" = "web" ]; then
     echo "[entrypoint] Collecting static files..."
     uv run python manage.py collectstatic --noinput
 
-    echo "[entrypoint] Starting Gunicorn..."
-    exec uv run gunicorn config.wsgi:application \
+    echo "[entrypoint] Starting Gunicorn with New Relic..."
+    export NEW_RELIC_CONFIG_FILE=/app/newrelic.ini
+    exec newrelic-admin run-program gunicorn config.wsgi:application \
       --bind 0.0.0.0:8000 \
       --workers 3 \
       --timeout 120 \
@@ -24,12 +25,14 @@ if [ "$SERVICE" = "web" ]; then
       --error-logfile -
 
 elif [ "$SERVICE" = "celery_worker" ]; then
-    echo "[entrypoint] Starting Celery Worker..."
-    exec uv run celery -A config worker --loglevel=info
+    echo "[entrypoint] Starting Celery Worker with New Relic..."
+    export NEW_RELIC_CONFIG_FILE=/app/newrelic.ini
+    exec newrelic-admin run-program celery -A config worker --loglevel=info
 
 elif [ "$SERVICE" = "celery_beat" ]; then
-    echo "[entrypoint] Starting Celery Beat..."
-    exec uv run celery -A config beat --loglevel=info
+    echo "[entrypoint] Starting Celery Beat with New Relic..."
+    export NEW_RELIC_CONFIG_FILE=/app/newrelic.ini
+    exec newrelic-admin run-program celery -A config beat --loglevel=info
 
 else
     # Default fallback: Execute whatever was passed to the container

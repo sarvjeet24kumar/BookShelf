@@ -20,6 +20,8 @@ services:
       - REDIS_URL=${DOCKER_REDIS_URL}
       - CELERY_BROKER_URL=${DOCKER_CELERY_BROKER_URL}
       - CELERY_RESULT_BACKEND=${DOCKER_CELERY_RESULT_BACKEND}
+      - NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
+      - NEW_RELIC_APP_NAME=${NEW_RELIC_APP_NAME:-BookShelf-API}
       - TZ=Asia/Kolkata
     volumes:
       - static_files:/app/staticfiles
@@ -27,8 +29,7 @@ services:
       - "8000"
 
   nginx:
-    build:
-      context: ./nginx
+    image: nginx:latest
     container_name: bookshelf-nginx
     depends_on:
       - api
@@ -39,6 +40,7 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - static_files:/app/staticfiles:ro
+      - /usr/share/zoneinfo/Asia/Kolkata:/etc/localtime:ro
     restart: unless-stopped
 
   worker:
@@ -51,6 +53,8 @@ services:
       - .env
     environment:
       - SERVICE=celery_worker
+      - NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
+      - NEW_RELIC_APP_NAME=${NEW_RELIC_APP_NAME:-BookShelf-Worker}
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=${DOCKER_REDIS_URL}
       - CELERY_BROKER_URL=${DOCKER_CELERY_BROKER_URL}
@@ -67,6 +71,8 @@ services:
       - .env
     environment:
       - SERVICE=celery_beat
+      - NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
+      - NEW_RELIC_APP_NAME=${NEW_RELIC_APP_NAME:-BookShelf-Beat}
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=${DOCKER_REDIS_URL}
       - CELERY_BROKER_URL=${DOCKER_CELERY_BROKER_URL}

@@ -12,9 +12,7 @@ from tests.factories.book_factories import BookFactory, GenreFactory, UserBookFa
 from tests.factories.payment_factories import SubscriptionFactory, PaymentFactory
 from common.enums import UserRole
 
-# Global Monkeypatches
-if not hasattr(UserRole, "SUPERADMIN"):
-    UserRole.SUPERADMIN = UserRole.SUPER_ADMIN
+# 
 
 # Disable throttling for tests
 if hasattr(settings, "REST_FRAMEWORK"):
@@ -76,13 +74,13 @@ def _make_mock_user(role=UserRole.USER, tenant=None, **overrides):
 
 def _make_mock_tenant():
     """Create a MagicMock tenant."""
-    t = MagicMock()
-    t.id = uuid.uuid4()
-    t.name = fake.company()
-    t.slug = fake.slug()
-    t.is_active = True
-    t.deleted_at = None
-    return t
+    tenant = MagicMock()
+    tenant.id = uuid.uuid4()
+    tenant.name = fake.company()
+    tenant.slug = fake.slug()
+    tenant.is_active = True
+    tenant.deleted_at = None
+    return tenant
 
 
 @pytest.fixture
