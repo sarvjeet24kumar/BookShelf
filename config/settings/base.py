@@ -56,6 +56,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "silk.middleware.SilkyMiddleware",
     "common.middleware.RequestIDMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -152,10 +153,26 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "10000/minute" if env.bool("LOCUST_PERF_TEST", default=False) else THROTTLE_RATE_ANON,
-        "user": "10000/minute" if env.bool("LOCUST_PERF_TEST", default=False) else THROTTLE_RATE_USER,
-        "ip_throttle": "10000/minute" if env.bool("LOCUST_PERF_TEST", default=False) else THROTTLE_RATE_IP,
-        "auth_throttle": "10000/minute" if env.bool("LOCUST_PERF_TEST", default=False) else THROTTLE_RATE_AUTH,
+        "anon": (
+            "10000/minute"
+            if env.bool("LOCUST_PERF_TEST", default=False)
+            else THROTTLE_RATE_ANON
+        ),
+        "user": (
+            "10000/minute"
+            if env.bool("LOCUST_PERF_TEST", default=False)
+            else THROTTLE_RATE_USER
+        ),
+        "ip_throttle": (
+            "10000/minute"
+            if env.bool("LOCUST_PERF_TEST", default=False)
+            else THROTTLE_RATE_IP
+        ),
+        "auth_throttle": (
+            "10000/minute"
+            if env.bool("LOCUST_PERF_TEST", default=False)
+            else THROTTLE_RATE_AUTH
+        ),
     },
 }
 
@@ -172,7 +189,6 @@ SIMPLE_JWT = {
 SITE_URL = env("SITE_URL", default="http://127.0.0.1:8000")
 
 
-
 # Razorpay Settings
 RAZORPAY_KEY_ID = env("RAZORPAY_KEY_ID", default="")
 RAZORPAY_KEY_SECRET = env("RAZORPAY_KEY_SECRET", default="")
@@ -186,12 +202,17 @@ INTERNAL_IPS = [
     "::1",
 ]
 
+
 def show_toolbar(request):
     """Custom function to hide toolbar on specific paths like /silk/"""
-    if not request.path or any(request.path.startswith(p) for p in ["/silk/", "/health/"]):
+    if not request.path or any(
+        request.path.startswith(p) for p in ["/silk/", "/health/"]
+    ):
         return False
     from django.conf import settings
+
     return settings.DEBUG and request.META.get("REMOTE_ADDR") in settings.INTERNAL_IPS
+
 
 # Debug Toolbar Configuration (Hide Silk noise)
 DEBUG_TOOLBAR_CONFIG = {
