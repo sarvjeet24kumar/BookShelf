@@ -103,8 +103,8 @@ class TestChangePasswordSerializerUnit:
 
     def test_new_password_same_as_current(self, fake_data):
         """Test that new password same as current raises ValidationError."""
-        # Ensure password has a special char from the restricted set [!@#$%^&*]
-        password = fake_data.password(special_chars=True)
+        # Ensure password meets all requirements: 8+ chars, letter, digit, and special char [!@#$%^&*]
+        password = fake_data.password(length=10, special_chars=True, digits=True) + "!"
         data = {
             "current_password": password,
             "new_password": password,
