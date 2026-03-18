@@ -52,10 +52,7 @@ services:
       if [ ! -f /etc/letsencrypt/live/${DOMAIN_NAME}/fullchain.pem ]; then
         echo 'Creating dummy certificates...';
         mkdir -p /etc/letsencrypt/live/${DOMAIN_NAME};
-        openssl req -x509 -nodes -newkey rsa:2048 -days 1
-          -keyout /etc/letsencrypt/live/${DOMAIN_NAME}/privkey.pem
-          -out /etc/letsencrypt/live/${DOMAIN_NAME}/fullchain.pem
-          -subj '/CN=localhost';
+        openssl req -x509 -nodes -newkey rsa:2048 -days 1 -keyout /etc/letsencrypt/live/${DOMAIN_NAME}/privkey.pem -out /etc/letsencrypt/live/${DOMAIN_NAME}/fullchain.pem -subj '/CN=localhost';
       fi;
       nginx -g 'daemon off;' &
       while :; do
@@ -124,9 +121,7 @@ services:
       trap exit TERM;
       if [ ! -d '/etc/letsencrypt/live/${DOMAIN_NAME}' ]; then
         echo 'Requesting initial certificates...';
-        certbot certonly --webroot -w /var/www/certbot
-          -d ${DOMAIN_NAME} --email ${CERTBOT_EMAIL}
-          --agree-tos --no-eff-email;
+        certbot certonly --webroot -w /var/www/certbot -d ${DOMAIN_NAME} --email ${CERTBOT_EMAIL} --agree-tos --no-eff-email --non-interactive;
       fi;
       while :; do
         certbot renew;
