@@ -131,9 +131,10 @@ services:
         echo \"Waiting for Nginx to be ready (30s)...\"
         sleep 30
         if [ ! -f /etc/letsencrypt/live/$$DOMAIN_NAME/cert.pem ]; then
-          echo \"Clearing dummy certificates for $$DOMAIN_NAME...\"
-          rm -rf /etc/letsencrypt/live/$$DOMAIN_NAME
-          rm -rf /etc/letsencrypt/archive/$$DOMAIN_NAME
+          echo \"Cleaning up any previous or broken certificates for $$DOMAIN_NAME...\"
+          rm -rf /etc/letsencrypt/live/$$DOMAIN_NAME*
+          rm -rf /etc/letsencrypt/archive/$$DOMAIN_NAME*
+          rm -rf /etc/letsencrypt/renewal/$$DOMAIN_NAME*.conf
           for i in 1 2 3; do
             echo \"Attempt $$i to acquire certificate for $$DOMAIN_NAME...\"
             certbot certonly --webroot -w /var/www/certbot -d $$DOMAIN_NAME --email $$CERTBOT_EMAIL --agree-tos --no-eff-email --non-interactive && break
