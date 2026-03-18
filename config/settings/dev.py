@@ -1,5 +1,11 @@
 from .base import *
 
+MIDDLEWARE = [
+    "pyinstrument.middleware.ProfilerMiddleware",
+    "silk.middleware.SilkyMiddleware",
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
+] + MIDDLEWARE
+
 DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*", "bookshelf.isroot.in"])
 DATABASES = {"default": env.db()}
@@ -32,3 +38,12 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@bookshelf.com")
 # OTP Configuration
 OTP_EXPIRY_MINUTES = env.int("OTP_EXPIRY_MINUTES")
 OTP_LENGTH = env.int("OTP_LENGTH", default=6)
+
+
+def show_pyinstrument(request):
+    return True
+
+
+PYINSTRUMENT_SHOW_CALLBACK = "config.settings.dev.show_pyinstrument"
+
+PYINSTRUMENT_PROFILE_DIR = BASE_DIR / "profiles"

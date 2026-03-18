@@ -31,14 +31,15 @@ class BookListSerializer(BaseModelSerializer):
     def get_genres(self, book):
         """Get list of genre names for this book."""
         return [
-            bg.genre.name for bg in book.book_genres.filter(deleted_at__isnull=True)
+            bg.genre.name for bg in book.book_genres.all()
+            if bg.deleted_at is None
         ]
 
     def get_created_by(self, book):
         """Get minimal user info for the creator."""
-        if book.created_by:
+        if book.created_by_id:
             return {
-                "id": str(book.created_by.id),
+                "id": str(book.created_by_id),
             }
         return None
 
@@ -206,7 +207,6 @@ class BookUpdateSerializer(serializers.ModelSerializer):
 
             to_add = new_genre_ids - current_genre_ids
             for genre_id in to_add:
-                genre = Genre.objects.get(id=genre_id)
-                BookGenre.objects.create(book=instance, genre=genre)
+                BookGenre.objects.create(book=instance, genre_id=genre_id)
 
         return instance

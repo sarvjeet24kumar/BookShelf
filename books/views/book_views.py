@@ -15,7 +15,7 @@ from books.services.book_cache_service import book_cache_service
 from common.pagination import CommonPagination
 from common.enums import UserRole, RequestStatus
 from common.permissions import IsTenantMember
-from django.db.models import Q
+from django.db.models import Q, prefetch_related_objects
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +96,8 @@ class BookView(APIView):
 
         logger.info("Book created successfully")
 
+        prefetch_related_objects([book], "book_genres__genre")
+
         return Response(
             BookListSerializer(book, context={"request": request}).data,
             status=status.HTTP_201_CREATED,
@@ -130,6 +132,8 @@ class BookDetailView(APIView):
         if request.user.role != UserRole.ADMIN:
             exclude_fields.append("deleted_at")
 
+        prefetch_related_objects([book], "book_genres__genre")
+
         serializer = BookListSerializer(
             book, exclude_fields=exclude_fields, context={"request": request}
         )
@@ -158,6 +162,8 @@ class BookDetailView(APIView):
         updated_book = serializer.save()
 
         logger.info("Book updated successfully")
+
+        prefetch_related_objects([updated_book], "book_genres__genre")
 
         response_serializer = BookListSerializer(
             updated_book, context={"request": request}

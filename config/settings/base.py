@@ -56,7 +56,6 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "silk.middleware.SilkyMiddleware",
     "common.middleware.RequestIDMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -70,11 +69,6 @@ MIDDLEWARE = [
     "common.middleware.API404Middleware",
 ]
 
-# Heavy Debug/Profiling Middleware (Disabled during performance tests)
-if not env.bool("LOCUST_PERF_TEST", default=False):
-    MIDDLEWARE.insert(0, "silk.middleware.SilkyMiddleware")
-    MIDDLEWARE.insert(1, "debug_toolbar.middleware.DebugToolbarMiddleware")
-    MIDDLEWARE.insert(2, "pyinstrument.middleware.ProfilerMiddleware")
 
 ROOT_URLCONF = "config.urls"
 

@@ -109,11 +109,14 @@ class TestLoginView:
     ):
         """Deleted user should get 401."""
         mock_user = MagicMock()
-        mock_user.deleted_at = fake_data.date_time_between(start_date='-1y', end_date='now')
+        mock_user.deleted_at = fake_data.date_time_between(
+            start_date="-1y", end_date="now"
+        )
         mock_find_user.return_value = mock_user
 
         request = factory.post(
-            "/api/v1/auth/login/", {"email": fake_data.email(), "password": fake_data.password()}
+            "/api/v1/auth/login/",
+            {"email": fake_data.email(), "password": fake_data.password()},
         )
         response = view(request)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED

@@ -43,9 +43,11 @@ class BaseModel(models.Model):
     def restore(self):
         """Restore a soft-deleted record by clearing deleted_at."""
         self.deleted_at = None
+        update_fields = ["deleted_at", "updated_at"]
         if hasattr(self, "is_active"):
             self.is_active = True
-        self.save(update_fields=["deleted_at", "updated_at", "is_active"])
+            update_fields.append("is_active")
+        self.save(update_fields=update_fields)
 
     @property
     def is_deleted(self):

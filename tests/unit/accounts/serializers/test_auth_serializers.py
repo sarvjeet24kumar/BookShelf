@@ -16,7 +16,6 @@ class TestSignupSerializerUnit:
 
     def test_passwords_match_validation(self, fake_data):
         """Test that mismatched passwords raise ValidationError."""
-        # Ensure password meets requirements: 8+ chars, letter, digit, special char [!@#$%^&*]
         password = fake_data.password(length=10, special_chars=True, digits=True) + "!"
         mismatched_password = fake_data.password(length=10, special_chars=True, digits=True) + "@"
         
@@ -103,7 +102,7 @@ class TestChangePasswordSerializerUnit:
 
     def test_new_password_same_as_current(self, fake_data):
         """Test that new password same as current raises ValidationError."""
-        # Ensure password meets all requirements: 8+ chars, letter, digit, and special char [!@#$%^&*]
+
         password = fake_data.password(length=10, special_chars=True, digits=True) + "!"
         data = {
             "current_password": password,

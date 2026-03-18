@@ -59,8 +59,8 @@ class TestBookViewGet:
         force_authenticate(request, user=mock_admin)
         response = list_view(request)
         assert response.status_code == status.HTTP_200_OK
-        assert isinstance(response.data, dict)  # Adjusted for paginated response
-        assert response.data["data"] == []  # Adjusted for paginated response
+        assert isinstance(response.data, dict)  
+        assert response.data["data"] == [] 
         mock_cache_svc.get_books_for_tenant.assert_called_once()
 
     @patch("books.views.book_views.BookListSerializer")
@@ -78,7 +78,6 @@ class TestBookViewGet:
         force_authenticate(request, user=mock_user)
         response = list_view(request)
         assert response.status_code == status.HTTP_200_OK
-        # The view paginates cached data, so it should be in "data"
         assert response.data["data"] == cached_data
         mock_cache_svc.get_books_for_tenant.assert_called_once()
 
@@ -86,12 +85,16 @@ class TestBookViewGet:
 class TestBookViewPost:
     """Unit tests for BookView.post() — create book."""
 
+    @patch("books.views.book_views.prefetch_related_objects")
+    @patch("books.views.book_views.Book")
     @patch("books.views.book_views.BookListSerializer")
     @patch("books.views.book_views.BookCreateSerializer")
     def test_create_book_success(
         self,
         MockCreateSerializer,
         MockListSerializer,
+        MockBook,
+        MockPrefetch,
         list_view,
         factory,
         mock_user,
@@ -102,6 +105,8 @@ class TestBookViewPost:
         mock_ser.is_valid.return_value = True
         mock_book = MagicMock()
         mock_ser.save.return_value = mock_book
+        
+        MockBook.objects.get.return_value = mock_book
 
         book_title = fake_data.sentence(nb_words=3)
         mock_id = str(fake_data.uuid4())
@@ -133,10 +138,11 @@ class TestBookViewPost:
 class TestBookDetailView:
     """Unit tests for BookDetailView."""
 
+    @patch("books.views.book_views.prefetch_related_objects")
     @patch("books.views.book_views.BookListSerializer")
     @patch("books.views.book_views.Book")
     def test_get_book_as_admin(
-        self, MockBook, MockSerializer, detail_view, factory, mock_admin, fake_data
+        self, MockBook, MockSerializer, MockPrefetch, detail_view, factory, mock_admin, fake_data
     ):
         """Admin should retrieve any book."""
         mock_book = MagicMock()
@@ -231,7 +237,7 @@ class TestBookDetailView:
     ):
         """Non-admin non-owner should get 403 on update."""
         mock_book = MagicMock()
-        mock_book.created_by = MagicMock()  # different user
+        mock_book.created_by = MagicMock() 
         mock_book.request_status = RequestStatus.APPROVED
         MockBook.objects.get.return_value = mock_book
 

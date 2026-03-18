@@ -36,9 +36,9 @@ class UserBooksView(UserLibraryPermissionMixin, APIView):
         queryset = (
             Book.objects.filter(
                 user_books__user=target_user,
-                user_books__deleted_at__isnull=True,
+                user_books__deleted_at__isnull=True
             )
-            .distinct()
+            .select_related("created_by")
             .prefetch_related("book_genres__genre")
         )
 
@@ -48,11 +48,10 @@ class UserBooksView(UserLibraryPermissionMixin, APIView):
         paginator = CommonPagination()
         paginated_queryset = paginator.paginate_queryset(queryset, request)
 
-        serializer_context = {"request": request, "target_user": target_user}
         serializer = UserBookListSerializer(
             paginated_queryset,
             many=True,
-            context=serializer_context,
+            context={"request": request},
         )
 
         return paginator.get_paginated_response(serializer.data)
@@ -123,8 +122,8 @@ class UserBookDetailView(UserLibraryPermissionMixin, APIView):
 
     permission_classes = [IsTenantMember]
 
-    def get_object(self, request, user_id, book_id):
-        """Get user's book by ID or raise NotFound exception."""
+    def get_user_book(self, request, user_id, book_id):
+        """Helper to get UserBook for mutation endpoints."""
         target_user = self.check_permission(request, user_id)
 
         user_book = UserBook.objects.filter(
@@ -132,22 +131,31 @@ class UserBookDetailView(UserLibraryPermissionMixin, APIView):
             book_id=book_id,
         ).first()
 
-        if not user_book:
+        if not user_book or user_book.deleted_at is not None:
             raise NotFound("Book not found in library.")
 
         return user_book, target_user
 
     def get(self, request, user_id, book_id):
         """Get details of a specific book in user's library."""
-        user_book, target_user = self.get_object(request, user_id, book_id)
+        target_user = self.check_permission(request, user_id)
+        
+        book = Book.objects.filter(
+            id=book_id,
+            user_books__user=target_user,
+            user_books__deleted_at__isnull=True
+        ).select_related("created_by").prefetch_related("book_genres__genre").first()
+
+        if not book:
+            raise NotFound("Book not found in library.")
 
         serializer_context = {"request": request, "target_user": target_user}
-        serializer = UserBookListSerializer(user_book.book, context=serializer_context)
+        serializer = UserBookListSerializer(book, context=serializer_context)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def patch(self, request, user_id, book_id):
         """Update reading status."""
-        user_book, target_user = self.get_object(request, user_id, book_id)
+        user_book, target_user = self.get_user_book(request, user_id, book_id)
 
         serializer = UserBookUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -164,7 +172,7 @@ class UserBookDetailView(UserLibraryPermissionMixin, APIView):
 
     def delete(self, request, user_id, book_id):
         """Remove book from library (soft delete)."""
-        user_book, target_user = self.get_object(request, user_id, book_id)
+        user_book, target_user = self.get_user_book(request, user_id, book_id)
         user_book.soft_delete()
 
         logger.info("Book removed from library")

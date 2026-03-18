@@ -4,6 +4,7 @@ from rest_framework_simplejwt.exceptions import InvalidToken
 from rest_framework.exceptions import AuthenticationFailed
 from django.core.cache import cache
 from tenants.context import set_current_tenant
+from accounts.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,19 @@ class TenantAwareJWTAuthentication(JWTAuthentication):
             raise InvalidToken("Invalid token", code="token_not_valid")
 
         return validated_token
+
+    def get_user(self, validated_token):
+        """
+        Optimize: Fetch user and tenant in a single query.
+        """
+
+        try:
+            user_id = validated_token["user_id"]
+            user = User.objects.select_related("tenant").get(id=user_id)
+        except (User.DoesNotExist, KeyError):
+            raise InvalidToken("User not found", code="user_not_found")
+
+        return user
 
     def authenticate(self, request):
         """Authenticate and set tenant context."""
@@ -56,7 +70,6 @@ class TenantAwareJWTAuthentication(JWTAuthentication):
             tenant = getattr(user, "tenant", None)
 
             if tenant:
-                tenant.refresh_from_db()
 
                 if tenant.deleted_at is not None:
                     logger.warning("Blocked API access for deleted tenant")
