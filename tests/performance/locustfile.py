@@ -30,12 +30,12 @@ class BookShelfUser(HttpUser):
         return None
 
     @task(1)
-    def api_1_health_check(self):
+    def api_health_check(self):
         """1. Unauthenticated: Health Check"""
         self.client.get("/health/", name="HealthCheck")
 
     @task(3)
-    def api_2_user_profile(self):
+    def api_user_profile(self):
         """2. Authenticated: User Profile Detail"""
         context = self.get_auth_context()
         if not context: return
@@ -46,7 +46,7 @@ class BookShelfUser(HttpUser):
         self.client.get(f"/api/v1/users/{context['user_id']}/", headers=headers, name="UserProfile")
 
     @task(5)
-    def api_3_list_books(self):
+    def api_list_books(self):
         """3. Authenticated: Book Catalog"""
         context = self.get_auth_context()
         if not context: return
@@ -57,7 +57,7 @@ class BookShelfUser(HttpUser):
         self.client.get("/api/v1/books/", headers=headers, name="ListBooks")
 
     @task(2)
-    def api_4_list_genres(self):
+    def api_list_genres(self):
         """4. Authenticated: Genre List"""
         context = self.get_auth_context()
         if not context: return

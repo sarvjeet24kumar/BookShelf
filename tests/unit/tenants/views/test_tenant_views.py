@@ -1,4 +1,4 @@
-"""Unit tests for TenantListCreateView and TenantDetailView — all dependencies mocked."""
+"""Unit tests for TenantListCreateView and TenantDetailView ."""
 
 import pytest
 import uuid
@@ -120,34 +120,36 @@ class TestTenantDetailView:
         mock_data = {"name": fake_data.company()}
         mock_ser.data = mock_data
 
-        request = factory.get("/api/v1/tenants/1/")
+        tenant_id = str(fake_data.random_int())
+        request = factory.get(f"/api/v1/tenants/{tenant_id}/")
         force_authenticate(request, user=mock_super_admin)
-        response = detail_view(request, id="1")
+        response = detail_view(request, id=tenant_id)
         assert response.status_code == status.HTTP_200_OK
         assert response.data == mock_data
 
     @patch("tenants.views.tenant_views.Tenant")
     def test_get_tenant_not_found(
-        self, MockTenant, detail_view, factory, mock_super_admin
+        self, MockTenant, detail_view, factory, mock_super_admin, fake_data
     ):
         """Non-existent tenant should return 404."""
 
         MockTenant.DoesNotExist = RealTenant.DoesNotExist
         MockTenant.all_objects.get.side_effect = RealTenant.DoesNotExist
 
-        request = factory.get("/api/v1/tenants/999/")
+        tenant_id = str(fake_data.random_int())
+        request = factory.get(f"/api/v1/tenants/{tenant_id}/")
         force_authenticate(request, user=mock_super_admin)
-        response = detail_view(request, id="999")
+        response = detail_view(request, id=tenant_id)
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.data["error"]["message"] == "Tenant not found."
 
     def test_tenant_admin_cannot_access_other_tenant(
-        self, detail_view, factory, mock_admin
+        self, detail_view, factory, mock_admin, fake_data
     ):
         """Admin should get 403 when accessing another tenant."""
         other_tenant = MagicMock()
-        other_tenant.id = "other-tenant-id"
-        mock_admin.tenant_id = "my-tenant-id"
+        other_tenant.id = str(fake_data.uuid4())
+        mock_admin.tenant_id = str(fake_data.uuid4())
 
         with patch(
             "tenants.views.tenant_views.TenantListCreateView.get_permissions",
@@ -168,14 +170,15 @@ class TestTenantDetailView:
 
     @patch("tenants.views.tenant_views.Tenant")
     def test_delete_tenant_as_superadmin(
-        self, MockTenant, detail_view, factory, mock_super_admin
+        self, MockTenant, detail_view, factory, mock_super_admin, fake_data
     ):
         """Super admin should delete tenant and return 204."""
         mock_t = MagicMock()
         MockTenant.all_objects.get.return_value = mock_t
 
-        request = factory.delete("/api/v1/tenants/1/")
+        tenant_id = str(fake_data.random_int())
+        request = factory.delete(f"/api/v1/tenants/{tenant_id}/")
         force_authenticate(request, user=mock_super_admin)
-        response = detail_view(request, id="1")
+        response = detail_view(request, id=tenant_id)
         assert response.status_code == status.HTTP_204_NO_CONTENT
         mock_t.soft_delete.assert_called_once()

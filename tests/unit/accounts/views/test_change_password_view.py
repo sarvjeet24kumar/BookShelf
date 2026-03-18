@@ -1,4 +1,4 @@
-"""Unit tests for ChangePasswordView — all dependencies mocked."""
+"""Unit tests for ChangePasswordView ."""
 
 import pytest
 from unittest.mock import patch, MagicMock

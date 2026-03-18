@@ -29,7 +29,7 @@ class PaymentFactory(DjangoModelFactory):
     initiated_by = factory.SubFactory(
         UserFactory, tenant=factory.SelfAttribute("..tenant")
     )
-    amount = 50000
+    amount = 999
     status = PaymentStatus.CREATED
 
     razorpay_order_id = factory.Faker("numerify", text="order_##############")

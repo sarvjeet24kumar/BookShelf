@@ -1,4 +1,4 @@
-"""Unit tests for CreateOrderView — all dependencies mocked."""
+"""Unit tests for CreateOrderView ."""
 
 import pytest
 from unittest.mock import patch, MagicMock

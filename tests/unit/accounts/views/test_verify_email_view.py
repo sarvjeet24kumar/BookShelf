@@ -1,4 +1,4 @@
-"""Unit tests for VerifyEmailView and ResendOTPView — all dependencies mocked."""
+"""Unit tests for VerifyEmailView and ResendOTPView ."""
 
 import pytest
 from unittest.mock import patch, MagicMock

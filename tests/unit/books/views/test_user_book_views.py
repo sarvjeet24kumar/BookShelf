@@ -1,4 +1,4 @@
-"""Unit tests for UserBooksView and UserBookDetailView — all dependencies mocked."""
+"""Unit tests for UserBooksView and UserBookDetailView ."""
 
 import pytest
 import uuid
@@ -230,74 +230,79 @@ class TestUserBooksViewPost:
 class TestUserBookDetailView:
     """Unit tests for UserBookDetailView."""
 
-    def test_delete_book_from_library(self, detail_view, factory, mock_user):
+    def test_delete_book_from_library(self, detail_view, factory, mock_user, fake_data):
         """Removing book from library should soft delete and return 204."""
         mock_user_book = MagicMock()
         mock_user_book.soft_delete = MagicMock()
 
+        book_id = str(fake_data.random_int())
         with patch.object(
             UserBookDetailView, "get_object", return_value=(mock_user_book, mock_user)
         ):
-            request = factory.delete(f"/api/v1/users/{mock_user.id}/books/1/")
+            request = factory.delete(f"/api/v1/users/{mock_user.id}/books/{book_id}/")
             force_authenticate(request, user=mock_user)
-            response = detail_view(request, user_id=mock_user.id, book_id="1")
+            response = detail_view(request, user_id=mock_user.id, book_id=book_id)
             assert response.status_code == status.HTTP_204_NO_CONTENT
             mock_user_book.soft_delete.assert_called_once()
 
     @patch("books.views.user_book_views.UserBook")
-    def test_get_object_success(self, MockUserBook, detail_view, factory, mock_user):
+    def test_get_object_success(self, MockUserBook, detail_view, factory, mock_user, fake_data):
         """get_object returns user_book and target_user."""
         mock_user_book = MagicMock()
         MockUserBook.objects.filter.return_value.first.return_value = mock_user_book
         
-        request = factory.get(f"/api/v1/users/{mock_user.id}/books/1/")
+        book_id = str(fake_data.random_int())
+        request = factory.get(f"/api/v1/users/{mock_user.id}/books/{book_id}/")
         force_authenticate(request, user=mock_user)
         
         view = UserBookDetailView()
         with patch.object(UserBookDetailView, "check_permission", return_value=mock_user):
-            obj, u = view.get_object(request, mock_user.id, "1")
+            obj, u = view.get_object(request, mock_user.id, book_id)
             assert obj == mock_user_book
             assert u == mock_user
 
     @patch("books.views.user_book_views.UserBook")
-    def test_get_object_not_found(self, MockUserBook, detail_view, factory, mock_user):
+    def test_get_object_not_found(self, MockUserBook, detail_view, factory, mock_user, fake_data):
         """get_object raises NotFound when book isn't in library."""
         MockUserBook.objects.filter.return_value.first.return_value = None
         
-        request = factory.get(f"/api/v1/users/{mock_user.id}/books/1/")
+        book_id = str(fake_data.random_int())
+        request = factory.get(f"/api/v1/users/{mock_user.id}/books/{book_id}/")
         force_authenticate(request, user=mock_user)
         
         view = UserBookDetailView()
         with patch.object(UserBookDetailView, "check_permission", return_value=mock_user):
             with pytest.raises(NotFound):
-                view.get_object(request, mock_user.id, "1")
+                view.get_object(request, mock_user.id, book_id)
 
-    def test_get_book_from_library(self, detail_view, factory, mock_user):
+    def test_get_book_from_library(self, detail_view, factory, mock_user, fake_data):
         """GET specific book in library."""
         mock_user_book = MagicMock()
         
+        book_id = str(fake_data.random_int())
         with patch.object(UserBookDetailView, "get_object", return_value=(mock_user_book, mock_user)):
             with patch("books.views.user_book_views.UserBookListSerializer") as MockSer:
                 MockSer.return_value.data = {"status": "READING"}
                 
-                request = factory.get(f"/api/v1/users/{mock_user.id}/books/1/")
+                request = factory.get(f"/api/v1/users/{mock_user.id}/books/{book_id}/")
                 force_authenticate(request, user=mock_user)
-                response = detail_view(request, user_id=mock_user.id, book_id="1")
+                response = detail_view(request, user_id=mock_user.id, book_id=book_id)
                 assert response.status_code == status.HTTP_200_OK
 
-    def test_patch_book_status(self, detail_view, factory, mock_user):
+    def test_patch_book_status(self, detail_view, factory, mock_user, fake_data):
         """PATCH reading status of book in library."""
         mock_user_book = MagicMock()
         
+        book_id = str(fake_data.random_int())
         with patch.object(UserBookDetailView, "get_object", return_value=(mock_user_book, mock_user)):
             with patch("books.views.user_book_views.UserBookUpdateSerializer") as MockSer:
                 mock_ser = MockSer.return_value
                 mock_ser.is_valid.return_value = True
                 mock_ser.validated_data = {"status": BookStatus.COMPLETED}
                 
-                request = factory.patch(f"/api/v1/users/{mock_user.id}/books/1/", {"status": BookStatus.COMPLETED})
+                request = factory.patch(f"/api/v1/users/{mock_user.id}/books/{book_id}/", {"status": BookStatus.COMPLETED})
                 force_authenticate(request, user=mock_user)
-                response = detail_view(request, user_id=mock_user.id, book_id="1")
+                response = detail_view(request, user_id=mock_user.id, book_id=book_id)
                 assert response.status_code == status.HTTP_200_OK
                 mock_user_book.save.assert_called_once()
 

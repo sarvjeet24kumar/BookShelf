@@ -1,4 +1,4 @@
-"""Unit tests for VerifyPaymentView — all dependencies mocked."""
+"""Unit tests for VerifyPaymentView ."""
 
 import pytest
 from unittest.mock import patch, MagicMock

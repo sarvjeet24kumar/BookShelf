@@ -16,11 +16,15 @@ class TestSignupSerializerUnit:
 
     def test_passwords_match_validation(self, fake_data):
         """Test that mismatched passwords raise ValidationError."""
+        # Ensure password meets requirements: 8+ chars, letter, digit, special char [!@#$%^&*]
+        password = fake_data.password(length=10, special_chars=True, digits=True) + "!"
+        mismatched_password = fake_data.password(length=10, special_chars=True, digits=True) + "@"
+        
         data = {
             "username": fake_data.user_name(),
             "email": fake_data.email(),
-            "password": "ValidPassword123!",
-            "password_confirm": "Mismatched@123",
+            "password": password,
+            "password_confirm": mismatched_password,
             "first_name": fake_data.first_name(),
             "last_name": fake_data.last_name(),
             "phone_no": f"+91{fake_data.msisdn()[:10]}",
@@ -81,10 +85,15 @@ class TestChangePasswordSerializerUnit:
 
     def test_mismatched_new_passwords(self, fake_data):
         """Test that mismatched new passwords raise ValidationError."""
+        # Ensure passwords meet requirements
+        current_password = fake_data.password(length=10, special_chars=True, digits=True) + "!"
+        new_password = fake_data.password(length=10, special_chars=True, digits=True) + "@"
+        confirm_password = fake_data.password(length=10, special_chars=True, digits=True) + "#"
+        
         data = {
-            "current_password": "OldPassword123!",
-            "new_password": "NewPassword123!",
-            "confirm_password": "Mismatched@123",
+            "current_password": current_password,
+            "new_password": new_password,
+            "confirm_password": confirm_password,
         }
         serializer = ChangePasswordSerializer(data=data)
         assert not serializer.is_valid()
@@ -95,7 +104,7 @@ class TestChangePasswordSerializerUnit:
     def test_new_password_same_as_current(self, fake_data):
         """Test that new password same as current raises ValidationError."""
         # Ensure password has a special char from the restricted set [!@#$%^&*]
-        password = "Password123!"
+        password = fake_data.password(special_chars=True)
         data = {
             "current_password": password,
             "new_password": password,

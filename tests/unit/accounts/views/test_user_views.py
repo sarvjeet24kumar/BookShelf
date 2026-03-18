@@ -1,4 +1,4 @@
-"""Unit tests for UserView and UserDetailView — all dependencies mocked."""
+"""Unit tests for UserView and UserDetailView ."""
 
 import pytest
 import uuid
@@ -178,7 +178,7 @@ class TestUserViewCreate:
                 mock_ser.validated_data = {"email": new_email, "tenant": mock_tenant}
                 
                 mock_saved_user = MagicMock()
-                mock_saved_user.username = "newadmin"
+                mock_saved_user.username = fake_data.user_name()
                 mock_saved_user.email = new_email
                 mock_ser.save.return_value = mock_saved_user
                 
@@ -209,10 +209,10 @@ class TestUserDetailViewUpdate:
                 response.data["error"]["message"]
             )
 
-    def test_update_role_blocked(self, detail_view, factory, mock_user, mock_admin):
+    def test_update_role_blocked(self, detail_view, factory, mock_user, mock_admin, fake_data):
         """Attempting to update role should return 403."""
         request = factory.put(
-            f"/api/v1/users/{mock_user.id}/", {"role": "admin"}, format="json"
+            f"/api/v1/users/{mock_user.id}/", {"role": fake_data.word()}, format="json"
         )
         force_authenticate(request, user=mock_admin)
 
@@ -258,12 +258,12 @@ class TestUserDetailViewUpdate:
             assert "Tenant admin cannot update other admin accounts" in str(response.data["error"]["message"])
 
     @patch("accounts.views.user_views.User")
-    def test_update_duplicate_username(self, MockUser, detail_view, factory, mock_user, mock_admin):
+    def test_update_duplicate_username(self, MockUser, detail_view, factory, mock_user, mock_admin, fake_data):
         """Duplicate username update should return 400."""
         MockUser.all_objects.filter.return_value.exists.return_value = True
         
         request = factory.put(
-            f"/api/v1/users/{mock_user.id}/", {"username": "taken_username"}, format="json"
+            f"/api/v1/users/{mock_user.id}/", {"username": fake_data.user_name()}, format="json"
         )
         force_authenticate(request, user=mock_admin)
 
@@ -273,10 +273,10 @@ class TestUserDetailViewUpdate:
             assert "already taken" in str(response.data["error"]["details"]["username"])
 
     @patch("accounts.views.user_views.blacklist_user_tokens")
-    def test_update_user_success_and_blacklist_tokens(self, mock_blacklist, detail_view, factory, mock_user, mock_admin):
+    def test_update_user_success_and_blacklist_tokens(self, mock_blacklist, detail_view, factory, mock_user, mock_admin, fake_data):
         """Updating user successfully and blacklisting tokens if deactivated."""
         request = factory.put(
-            f"/api/v1/users/{mock_user.id}/", {"first_name": "Updated"}, format="json"
+            f"/api/v1/users/{mock_user.id}/", {"first_name": fake_data.first_name()}, format="json"
         )
         force_authenticate(request, user=mock_admin)
         
@@ -288,7 +288,6 @@ class TestUserDetailViewUpdate:
                 mock_ser_instance.is_valid.return_value = True
                 mock_ser_instance.data = {"first_name": "Updated"}
                 
-                # Mock updated user as inactive to trigger blacklist
                 updated_user = MagicMock()
                 updated_user.is_active = False 
                 mock_ser_instance.save.return_value = updated_user
@@ -372,22 +371,23 @@ class TestUserDetailViewDestroy:
 class TestUserDetailViewRetrieve:
     """Unit tests for UserDetailView GET and methods."""
 
-    def test_retrieve_user(self, detail_view, factory, mock_user, mock_admin):
+    def test_retrieve_user(self, detail_view, factory, mock_user, mock_admin, fake_data):
         """GET /users/{id}/ should return user data."""
         request = factory.get(f"/api/v1/users/{mock_user.id}/")
         force_authenticate(request, user=mock_admin)
         with patch.object(UserDetailView, 'get_object', return_value=mock_user):
             with patch.object(UserDetailView, 'get_serializer') as mock_ser:
                 mock_ser_instance = MagicMock()
-                mock_ser_instance.data = {"username": "test"}
+                username = fake_data.user_name()
+                mock_ser_instance.data = {"username": username}
                 mock_ser.return_value = mock_ser_instance
                 response = detail_view(request, id=mock_user.id)
                 assert response.status_code == status.HTTP_200_OK
-                assert response.data == {"username": "test"}
+                assert response.data == {"username": username}
 
     @patch("accounts.views.user_views.User.objects.all")
     @patch("common.permissions.IsOwnerOrAdmin.has_object_permission", return_value=True)
-    def test_get_queryset_and_serializer_user_role(self, mock_has_perm, mock_all, detail_view, factory, mock_user):
+    def test_get_queryset_and_serializer_user_role(self, mock_has_perm, mock_all, detail_view, factory, mock_user, fake_data):
         """Test get_queryset and get_serializer logic."""
         request = factory.get(f"/api/v1/users/{mock_user.id}/")
         mock_user.role = UserRole.USER
@@ -399,7 +399,7 @@ class TestUserDetailViewRetrieve:
             
         with patch('accounts.views.user_views.RetrieveUpdateDestroyAPIView.get_serializer') as mock_super_get_serializer:
             mock_ser_instance = MagicMock()
-            mock_ser_instance.data = {"username": "test"}
+            mock_ser_instance.data = {"username": fake_data.user_name()}
             mock_super_get_serializer.return_value = mock_ser_instance
                 
             response = detail_view(request, id=mock_user.id)

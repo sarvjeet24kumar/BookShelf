@@ -3,8 +3,6 @@ from factory.django import DjangoModelFactory
 from django.contrib.auth import get_user_model
 from tenants.models import Tenant
 from common.enums import UserRole
-import random
-import string
 
 User = get_user_model()
 

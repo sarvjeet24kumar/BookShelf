@@ -1,4 +1,4 @@
-"""Unit tests for ForgotPasswordView and ResetPasswordView — all dependencies mocked."""
+"""Unit tests for ForgotPasswordView and ResetPasswordView ."""
 
 import pytest
 import uuid
@@ -117,39 +117,41 @@ class TestResetPasswordView:
         assert response.status_code == status.HTTP_200_OK
         assert b"Missing or invalid token" in response.content
 
-    def test_reset_password_post_no_token(self, reset_view, factory):
+    def test_reset_password_post_no_token(self, reset_view, factory, fake_data):
         """Missing token in POST should render error."""
-        request = factory.post("/api/v1/auth/reset-password/", {"password": "NewPassword123!", "confirm_password": "NewPassword123!"})
+        password = fake_data.password()
+        request = factory.post("/api/v1/auth/reset-password/", {"password": password, "confirm_password": password})
         response = reset_view(request)
         assert response.status_code == status.HTTP_200_OK
         assert b"Reset token is required." in response.content
 
-    def test_reset_password_post_missing_passwords(self, reset_view, factory):
+    def test_reset_password_post_missing_passwords(self, reset_view, factory, fake_data):
         """Missing passwords in POST should render error."""
-        request = factory.post("/api/v1/auth/reset-password/?token=validtoken", {})
+        request = factory.post(f"/api/v1/auth/reset-password/?token={fake_data.sha256()}", {})
         response = reset_view(request)
         assert response.status_code == status.HTTP_200_OK
         assert b"Both password and confirmation are required." in response.content
 
-    def test_reset_password_post_mismatched_passwords(self, reset_view, factory):
+    def test_reset_password_post_mismatched_passwords(self, reset_view, factory, fake_data):
         """Mismatched passwords in POST should render error."""
-        request = factory.post("/api/v1/auth/reset-password/?token=validtoken", {"password": "NewPassword123!", "confirm_password": "OtherPassword123!"})
+        request = factory.post(f"/api/v1/auth/reset-password/?token={fake_data.sha256()}", {"password": fake_data.password(), "confirm_password": fake_data.password()})
         response = reset_view(request)
         assert response.status_code == status.HTTP_200_OK
         assert b"Passwords do not match." in response.content
 
     @patch("accounts.views.password_reset_views.password_reset_service")
-    def test_reset_password_post_invalid_token(self, mock_reset_svc, reset_view, factory):
+    def test_reset_password_post_invalid_token(self, mock_reset_svc, reset_view, factory, fake_data):
         """Invalid token verification should render error."""
         mock_reset_svc.verify.return_value = (False, "Token expired.", None)
-        request = factory.post("/api/v1/auth/reset-password/?token=invalidtoken", {"password": "NewPassword123!", "confirm_password": "NewPassword123!"})
+        password = fake_data.password()
+        request = factory.post(f"/api/v1/auth/reset-password/?token={fake_data.sha256()}", {"password": password, "confirm_password": password})
         response = reset_view(request)
         assert response.status_code == status.HTTP_200_OK
         assert b"Token expired." in response.content
 
     @patch("accounts.views.password_reset_views.User.all_objects.filter")
     @patch("accounts.views.password_reset_views.password_reset_service")
-    def test_reset_password_post_user_not_found(self, mock_reset_svc, mock_user_filter, reset_view, factory):
+    def test_reset_password_post_user_not_found(self, mock_reset_svc, mock_user_filter, reset_view, factory, fake_data):
         """User not found should render error."""
         user_id = str(uuid.uuid4())
         mock_reset_svc.verify.return_value = (True, "", user_id)
@@ -158,14 +160,15 @@ class TestResetPasswordView:
         mock_qs.first.return_value = None
         mock_user_filter.return_value = mock_qs
 
-        request = factory.post("/api/v1/auth/reset-password/?token=validtoken", {"password": "NewPassword123!", "confirm_password": "NewPassword123!"})
+        password = fake_data.password()
+        request = factory.post(f"/api/v1/auth/reset-password/?token={fake_data.sha256()}", {"password": password, "confirm_password": password})
         response = reset_view(request)
         assert response.status_code == status.HTTP_200_OK
         assert b"User not found." in response.content
 
     @patch("accounts.views.password_reset_views.User.all_objects.filter")
     @patch("accounts.views.password_reset_views.password_reset_service")
-    def test_reset_password_post_success(self, mock_reset_svc, mock_user_filter, reset_view, factory, mock_user):
+    def test_reset_password_post_success(self, mock_reset_svc, mock_user_filter, reset_view, factory, mock_user, fake_data):
         """Valid data should reset password and render success."""
         user_id = str(uuid.uuid4())
         mock_reset_svc.verify.return_value = (True, "", user_id)
@@ -174,10 +177,12 @@ class TestResetPasswordView:
         mock_qs.first.return_value = mock_user
         mock_user_filter.return_value = mock_qs
 
-        request = factory.post("/api/v1/auth/reset-password/?token=validtoken", {"password": "NewPassword123!", "confirm_password": "NewPassword123!"})
+        token = fake_data.sha256()
+        password = fake_data.password()
+        request = factory.post(f"/api/v1/auth/reset-password/?token={token}", {"password": password, "confirm_password": password})
         response = reset_view(request)
         
         assert response.status_code == status.HTTP_200_OK
-        mock_user.set_password.assert_called_once_with("NewPassword123!")
+        mock_user.set_password.assert_called_once_with(password)
         mock_user.save.assert_called_once_with(update_fields=["password", "updated_at"])
-        mock_reset_svc.cleanup.assert_called_once_with("validtoken")
+        mock_reset_svc.cleanup.assert_called_once_with(token)

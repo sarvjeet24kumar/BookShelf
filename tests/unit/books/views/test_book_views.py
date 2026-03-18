@@ -1,4 +1,4 @@
-"""Unit tests for BookView and BookDetailView — all dependencies mocked."""
+"""Unit tests for BookView and BookDetailView ."""
 
 import pytest
 import uuid
@@ -144,70 +144,75 @@ class TestBookDetailView:
         MockBook.all_objects.get.return_value = mock_book
 
         mock_ser = MockSerializer.return_value
-        mock_data = {
+        mock_ser.data = {
             "id": str(fake_data.uuid4()),
             "title": fake_data.sentence(nb_words=3),
         }
-        mock_ser.data = mock_data
+        mock_data = mock_ser.data
 
-        request = factory.get("/api/v1/books/1/")
+        book_id = str(fake_data.random_int())
+        request = factory.get(f"/api/v1/books/{book_id}/")
         force_authenticate(request, user=mock_admin)
-        response = detail_view(request, id="1")
+        response = detail_view(request, id=book_id)
         assert response.status_code == status.HTTP_200_OK
         assert response.data == mock_data
 
     @patch("books.views.book_views.Book")
-    def test_get_book_not_found(self, MockBook, detail_view, factory, mock_admin):
+    def test_get_book_not_found(self, MockBook, detail_view, factory, mock_admin, fake_data):
         """Non-existent book should return 404."""
 
         MockBook.DoesNotExist = RealBook.DoesNotExist
         MockBook.all_objects.get.side_effect = RealBook.DoesNotExist
 
-        request = factory.get("/api/v1/books/1/")
+        book_id = str(fake_data.random_int())
+        request = factory.get(f"/api/v1/books/{book_id}/")
         force_authenticate(request, user=mock_admin)
-        response = detail_view(request, id="1")
+        response = detail_view(request, id=book_id)
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert "not found" in str(response.data["error"]["message"]).lower()
 
     @patch("books.views.book_views.UserBook")
     @patch("books.views.book_views.Book")
     def test_delete_book_non_admin_blocked(
-        self, MockBook, MockUserBook, detail_view, factory, mock_user
+        self, MockBook, MockUserBook, detail_view, factory, mock_user, fake_data
     ):
         """Non-admin user should get 403 when deleting."""
-        request = factory.delete("/api/v1/books/1/")
+        book_id = str(fake_data.random_int())
+        request = factory.delete(f"/api/v1/books/{book_id}/")
         force_authenticate(request, user=mock_user)
-        response = detail_view(request, id="1")
+        response = detail_view(request, id=book_id)
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     @patch("books.views.book_views.UserBook")
     @patch("books.views.book_views.Book")
     def test_delete_book_in_user_libraries_blocked(
-        self, MockBook, MockUserBook, detail_view, factory, mock_admin
+        self, MockBook, MockUserBook, detail_view, factory, mock_admin, fake_data
     ):
         """Book in user libraries should not be deleted — return 400."""
         mock_book = MagicMock()
         MockBook.all_objects.get.return_value = mock_book
         MockUserBook.objects.filter.return_value.exists.return_value = True
 
-        request = factory.delete("/api/v1/books/1/")
+        book_id = str(fake_data.random_int())
+        request = factory.delete(f"/api/v1/books/{book_id}/")
         force_authenticate(request, user=mock_admin)
-        response = detail_view(request, id="1")
+        response = detail_view(request, id=book_id)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     @patch("books.views.book_views.UserBook")
     @patch("books.views.book_views.Book")
     def test_delete_book_success(
-        self, MockBook, MockUserBook, detail_view, factory, mock_admin
+        self, MockBook, MockUserBook, detail_view, factory, mock_admin, fake_data
     ):
         """Admin deleting book not in any library should return 204."""
         mock_book = MagicMock()
         MockBook.all_objects.get.return_value = mock_book
         MockUserBook.objects.filter.return_value.exists.return_value = False
 
-        request = factory.delete("/api/v1/books/1/")
+        book_id = str(fake_data.random_int())
+        request = factory.delete(f"/api/v1/books/{book_id}/")
         force_authenticate(request, user=mock_admin)
-        response = detail_view(request, id="1")
+        response = detail_view(request, id=book_id)
         assert response.status_code == status.HTTP_204_NO_CONTENT
         mock_book.soft_delete.assert_called_once()
 
@@ -230,9 +235,10 @@ class TestBookDetailView:
         mock_book.request_status = RequestStatus.APPROVED
         MockBook.objects.get.return_value = mock_book
 
+        book_id = str(fake_data.random_int())
         request = factory.patch(
-            "/api/v1/books/1/", {"title": fake_data.sentence(nb_words=3)}, format="json"
+            f"/api/v1/books/{book_id}/", {"title": fake_data.sentence(nb_words=3)}, format="json"
         )
         force_authenticate(request, user=mock_user)
-        response = detail_view(request, id="1")
+        response = detail_view(request, id=book_id)
         assert response.status_code == status.HTTP_403_FORBIDDEN

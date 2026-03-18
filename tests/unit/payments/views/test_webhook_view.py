@@ -1,4 +1,4 @@
-"""Unit tests for RazorpayWebhookView — all dependencies mocked."""
+"""Unit tests for RazorpayWebhookView ."""
 
 import pytest
 import json
@@ -20,11 +20,15 @@ def factory():
 
 
 def _make_webhook_payload(
+    fake_data,
     event_type="payment.captured",
-    payment_id="pay_1",
-    order_id="order_1",
-    event_id="evt_123",
+    payment_id=None,
+    order_id=None,
+    event_id=None,
 ):
+    payment_id = payment_id or f"pay_{fake_data.msisdn()[:9]}"
+    order_id = order_id or f"order_{fake_data.msisdn()[:9]}"
+    event_id = event_id or f"evt_{fake_data.msisdn()[:9]}"
     return {
         "event": event_type,
         "id": event_id,
@@ -46,6 +50,7 @@ class TestRazorpayWebhookView:
     def test_webhook_unsupported_event_type(self, view, factory, fake_data):
         """Unsupported event type should be ignored with 200."""
         payload = _make_webhook_payload(
+            fake_data,
             event_type="order.created",
             payment_id=f"pay_{fake_data.msisdn()[:9]}",
             order_id=f"order_{fake_data.msisdn()[:9]}",
@@ -95,6 +100,7 @@ class TestRazorpayWebhookView:
         """Valid webhook should persist event, verify signature, and dispatch task."""
         event_id = f"evt_{fake_data.msisdn()[:9]}"
         payload = _make_webhook_payload(
+            fake_data,
             payment_id=f"pay_{fake_data.msisdn()[:9]}",
             order_id=f"order_{fake_data.msisdn()[:9]}",
             event_id=event_id,
@@ -132,6 +138,7 @@ class TestRazorpayWebhookView:
     ):
         """Invalid signature should return 400."""
         payload = _make_webhook_payload(
+            fake_data,
             payment_id=f"pay_{fake_data.msisdn()[:9]}",
             order_id=f"order_{fake_data.msisdn()[:9]}",
             event_id=f"evt_{fake_data.msisdn()[:9]}",
@@ -166,6 +173,7 @@ class TestRazorpayWebhookView:
     ):
         """Already processed event should return 200 with already_processed."""
         payload = _make_webhook_payload(
+            fake_data,
             payment_id=f"pay_{fake_data.msisdn()[:9]}",
             order_id=f"order_{fake_data.msisdn()[:9]}",
             event_id=f"evt_{fake_data.msisdn()[:9]}",
@@ -198,7 +206,7 @@ class TestRazorpayWebhookView:
 
     def test_webhook_missing_order_id(self, view, factory, fake_data):
         """Webhook with no order_id should return 400."""
-        payload = _make_webhook_payload(event_type="payment.captured", payment_id="pay_1", event_id="evt_1")
+        payload = _make_webhook_payload(fake_data, event_type="payment.captured", payment_id=f"pay_{fake_data.msisdn()[:9]}", event_id=f"evt_{fake_data.msisdn()[:9]}")
         payload["payload"]["payment"]["entity"]["order_id"] = None
 
         request = factory.post(
@@ -215,10 +223,10 @@ class TestRazorpayWebhookView:
     @patch("payments.views.webhook_views.WebhookEvent")
     @patch("payments.views.webhook_views.Payment")
     def test_webhook_full_edge_cases_and_missing_event_id(
-        self, MockPayment, MockWebhookEvent, MockRazorpay, mock_task, view, factory
+        self, MockPayment, MockWebhookEvent, MockRazorpay, mock_task, view, factory, fake_data
     ):
         """Test missing event_id, int created_at, Payment.DoesNotExist, unprocessed retry."""
-        payload = _make_webhook_payload(event_id=None)
+        payload = _make_webhook_payload(fake_data, event_id=None)
         payload["created_at"] = 1612345678 
 
         MockPayment.DoesNotExist = RealPayment.DoesNotExist
@@ -235,7 +243,7 @@ class TestRazorpayWebhookView:
             "/api/v1/payments/webhook/",
             data=json.dumps(payload),
             content_type="application/json",
-            HTTP_X_RAZORPAY_SIGNATURE="sig",
+            HTTP_X_RAZORPAY_SIGNATURE=fake_data.sha256(),
         )
         response = view(request)
         assert response.status_code == status.HTTP_202_ACCEPTED
@@ -243,9 +251,9 @@ class TestRazorpayWebhookView:
 
     @patch("payments.views.webhook_views.WebhookEvent")
     @patch("payments.views.webhook_views.Payment")
-    def test_webhook_event_persistence_failure(self, MockPayment, MockWebhookEvent, view, factory):
+    def test_webhook_event_persistence_failure(self, MockPayment, MockWebhookEvent, view, factory, fake_data):
         """Exception during get_or_create returns 500."""
-        payload = _make_webhook_payload()
+        payload = _make_webhook_payload(fake_data)
         MockWebhookEvent.objects.get_or_create.side_effect = Exception("DB Error")
 
         request = factory.post("/api/v1/payments/webhook/", data=json.dumps(payload), content_type="application/json")
@@ -257,10 +265,10 @@ class TestRazorpayWebhookView:
     @patch("payments.views.webhook_views.WebhookEvent")
     @patch("payments.views.webhook_views.Payment")
     def test_webhook_celery_task_failure(
-        self, MockPayment, MockWebhookEvent, MockRazorpay, mock_task, view, factory
+        self, MockPayment, MockWebhookEvent, MockRazorpay, mock_task, view, factory, fake_data
     ):
         """Exception when delaying celery task returns 500."""
-        payload = _make_webhook_payload()
+        payload = _make_webhook_payload(fake_data)
         
         mock_event = MagicMock()
         mock_event.processed = False

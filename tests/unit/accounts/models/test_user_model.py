@@ -48,10 +48,10 @@ class TestUserModelUnit:
         user = user_factory.build()
         assert user.role == UserRole.USER
 
-    def test_invalid_username_validator(self, user_factory):
+    def test_invalid_username_validator(self, user_factory, fake_data):
         """Test that invalid usernames raise ValidationError."""
         # Using build() + full_clean() is more "unit" than create()
-        user = user_factory.build(username="short")  # Assuming MIN_USERNAME_LENGTH > 5
+        user = user_factory.build(username=fake_data.lexify('????'))  # Too short
         with pytest.raises(ValidationError):
             user.full_clean()
 

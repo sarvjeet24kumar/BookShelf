@@ -1,4 +1,4 @@
-"""Unit tests for LogoutView — all dependencies mocked."""
+"""Unit tests for LogoutView ."""
 
 import pytest
 from unittest.mock import patch, MagicMock
@@ -56,19 +56,19 @@ class TestLogoutView:
         mock_cache.set.assert_called_once()
         mock_refresh.blacklist.assert_called_once()
 
-    def test_logout_missing_refresh_token(self, view, factory, mock_user):
+    def test_logout_missing_refresh_token(self, view, factory, mock_user, fake_data):
         """Missing refresh token should return 400."""
         request = factory.post(
-            "/api/v1/auth/logout/", {}, HTTP_AUTHORIZATION="Bearer access_token_123"
+            "/api/v1/auth/logout/", {}, HTTP_AUTHORIZATION=f"Bearer {fake_data.sha256()}"
         )
         force_authenticate(request, user=mock_user)
         response = view(request)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "Refresh token is required" in str(response.data["error"]["details"])
 
-    def test_logout_missing_bearer_header(self, view, factory):
+    def test_logout_missing_bearer_header(self, view, factory, fake_data):
         """Missing Authorization header should return 401."""
-        request = factory.post("/api/v1/auth/logout/", {"refresh": "any"})
+        request = factory.post("/api/v1/auth/logout/", {"refresh": fake_data.sha256()})
         response = view(request)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert "Authentication credentials were not provided" in str(
@@ -76,15 +76,15 @@ class TestLogoutView:
         )
 
     @patch("accounts.views.logout_view.RefreshToken")
-    def test_logout_invalid_token(self, MockToken, view, factory, mock_user):
+    def test_logout_invalid_token(self, MockToken, view, factory, mock_user, fake_data):
         """Invalid token should return 401."""
 
         MockToken.side_effect = TokenError("Token is invalid or expired")
 
         request = factory.post(
             "/api/v1/auth/logout/",
-            {"refresh": "invalid"},
-            HTTP_AUTHORIZATION="Bearer valid_access_token",
+            {"refresh": fake_data.word()},
+            HTTP_AUTHORIZATION=f"Bearer {fake_data.sha256()}",
         )
         force_authenticate(request, user=mock_user)
         response = view(request)

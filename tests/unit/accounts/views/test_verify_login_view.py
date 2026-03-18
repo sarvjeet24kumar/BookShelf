@@ -1,4 +1,4 @@
-"""Unit tests for VerifyLoginView — all dependencies mocked."""
+"""Unit tests for VerifyLoginView ."""
 
 import pytest
 from unittest.mock import patch, MagicMock
@@ -79,7 +79,7 @@ class TestVerifyLoginView:
     @patch("accounts.views.authentication_views.login_otp_service")
     @patch("accounts.views.authentication_views.find_user_with_validation")
     def test_verify_login_invalid_otp(
-        self, mock_find_user, mock_otp_svc, view, factory
+        self, mock_find_user, mock_otp_svc, view, factory, fake_data
     ):
         """Invalid OTP should return 400."""
         mock_user = MagicMock()
@@ -87,7 +87,7 @@ class TestVerifyLoginView:
         mock_otp_svc.verify.return_value = (False, "Invalid OTP.")
 
         request = factory.post(
-            "/api/v1/auth/verify-login/", {"email": "user@example.com", "otp": "000000"}
+            "/api/v1/auth/verify-login/", {"email": fake_data.email(), "otp": fake_data.msisdn()[:6]}
         )
         response = view(request)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -96,7 +96,7 @@ class TestVerifyLoginView:
     @patch("accounts.views.authentication_views.login_otp_service")
     @patch("accounts.views.authentication_views.find_user_with_validation")
     def test_verify_login_expired_otp(
-        self, mock_find_user, mock_otp_svc, view, factory
+        self, mock_find_user, mock_otp_svc, view, factory, fake_data
     ):
         """Expired OTP should return 400."""
         mock_user = MagicMock()
@@ -104,7 +104,7 @@ class TestVerifyLoginView:
         mock_otp_svc.verify.return_value = (False, "OTP expired.")
 
         request = factory.post(
-            "/api/v1/auth/verify-login/", {"email": "user@example.com", "otp": "111111"}
+            "/api/v1/auth/verify-login/", {"email": fake_data.email(), "otp": fake_data.msisdn()[:6]}
         )
         response = view(request)
         assert response.status_code == status.HTTP_400_BAD_REQUEST

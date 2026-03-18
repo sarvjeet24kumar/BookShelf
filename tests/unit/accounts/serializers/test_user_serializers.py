@@ -29,14 +29,14 @@ class TestUserSerializerUnit:
     def test_read_only_fields(self, fake_data):
         """Test read-only fields are not updated."""
         data = {
-            "id": 999,
+            "id": fake_data.random_int(),
             "username": fake_data.user_name(),
             "email": fake_data.email(),
             "password": fake_data.password(special_chars=True),
             "first_name": fake_data.first_name(),
             "last_name": fake_data.last_name(),
             "phone_no": f"+91{fake_data.msisdn()[:10]}",
-            "created_at": "2021-01-01T00:00:00Z",
+            "created_at": fake_data.date_time_this_decade().isoformat(),
         }
         serializer = UserSerializer(data=data)
         assert serializer.is_valid()

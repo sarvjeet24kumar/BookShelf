@@ -1,4 +1,4 @@
-"""Unit tests for SignupView — all dependencies mocked."""
+"""Unit tests for SignupView ."""
 
 import pytest
 from unittest.mock import patch, MagicMock
@@ -86,21 +86,19 @@ class TestSignupView:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "cannot be created" in str(response.data["error"]["details"])
 
-    # Removed @patch("accounts.views.registration_views.SignupSerializer")
     def test_signup_invalid_data(
-        self, view, factory, mock_tenant  # Modified parameters
+        self, view, factory, mock_tenant, fake_data
     ):
         """Invalid data should return 400."""
-        # Removed from rest_framework.exceptions import ValidationError and serializer mocking
         request = factory.post(
             "/api/v1/auth/signup/",
-            {  # Modified request data
-                "email": "invalid-email",
-                "password": "short",
-                "username": "",
+            { 
+                "email": fake_data.word(),  
+                "password": fake_data.password(length=5),
+                "username": "", 
             },
         )
-        response = view(request)  # Changed 'view' to 'signup_view'
+        response = view(request) 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "error" in response.data  # Modified assertion
-        assert "details" in response.data["error"]  # Modified assertion
+        assert "error" in response.data  
+        assert "details" in response.data["error"]

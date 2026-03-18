@@ -1,4 +1,4 @@
-"""Unit tests for LoginView — all dependencies mocked."""
+"""Unit tests for LoginView ."""
 
 import pytest
 from unittest.mock import patch, MagicMock
@@ -105,15 +105,15 @@ class TestLoginView:
     @patch("accounts.views.authentication_views.find_user")
     @patch("accounts.views.authentication_views.get_tenant_from_header")
     def test_login_deleted_user(
-        self, mock_get_tenant, mock_find_user, view, factory, mock_tenant
+        self, mock_get_tenant, mock_find_user, view, factory, mock_tenant, fake_data
     ):
         """Deleted user should get 401."""
         mock_user = MagicMock()
-        mock_user.deleted_at = "2023-01-01"
+        mock_user.deleted_at = fake_data.date_time_between(start_date='-1y', end_date='now')
         mock_find_user.return_value = mock_user
 
         request = factory.post(
-            "/api/v1/auth/login/", {"email": "deleted@example.com", "password": "any"}
+            "/api/v1/auth/login/", {"email": fake_data.email(), "password": fake_data.password()}
         )
         response = view(request)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -122,7 +122,7 @@ class TestLoginView:
     @patch("accounts.views.authentication_views.find_user")
     @patch("accounts.views.authentication_views.get_tenant_from_header")
     def test_login_unverified_email(
-        self, mock_get_tenant, mock_find_user, view, factory, mock_tenant
+        self, mock_get_tenant, mock_find_user, view, factory, mock_tenant, fake_data
     ):
         """Unverified email user should get 401."""
         mock_user = MagicMock()
@@ -132,7 +132,7 @@ class TestLoginView:
 
         request = factory.post(
             "/api/v1/auth/login/",
-            {"email": "unverified@example.com", "password": "any"},
+            {"email": fake_data.email(), "password": fake_data.password()},
         )
         response = view(request)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -141,7 +141,7 @@ class TestLoginView:
     @patch("accounts.views.authentication_views.find_user")
     @patch("accounts.views.authentication_views.get_tenant_from_header")
     def test_login_inactive_user(
-        self, mock_get_tenant, mock_find_user, view, factory, mock_tenant
+        self, mock_get_tenant, mock_find_user, view, factory, mock_tenant, fake_data
     ):
         """Suspended user should get 401."""
         mock_user = MagicMock()
@@ -151,7 +151,8 @@ class TestLoginView:
         mock_find_user.return_value = mock_user
 
         request = factory.post(
-            "/api/v1/auth/login/", {"email": "inactive@example.com", "password": "any"}
+            "/api/v1/auth/login/",
+            {"email": fake_data.email(), "password": fake_data.password()},
         )
         response = view(request)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -168,6 +169,7 @@ class TestLoginView:
         view,
         factory,
         mock_tenant,
+        fake_data,
     ):
         """Wrong password should return 401."""
         mock_user = MagicMock()
@@ -178,7 +180,8 @@ class TestLoginView:
         mock_authenticate.return_value = None
 
         request = factory.post(
-            "/api/v1/auth/login/", {"email": "user@example.com", "password": "wrong"}
+            "/api/v1/auth/login/",
+            {"email": fake_data.email(), "password": fake_data.password()},
         )
         response = view(request)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED

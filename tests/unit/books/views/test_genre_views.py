@@ -1,4 +1,4 @@
-"""Unit tests for GenreListView and GenreDetailView — all dependencies mocked."""
+"""Unit tests for GenreListView and GenreDetailView ."""
 
 import pytest
 from unittest.mock import patch, MagicMock
@@ -109,12 +109,13 @@ class TestGenreDetailView:
 
     @patch("books.views.genre_views.Genre")
     def test_delete_genre_non_admin_blocked(
-        self, MockGenre, detail_view, factory, mock_user
+        self, MockGenre, detail_view, factory, mock_user, fake_data
     ):
         """Non-admin user should get 403 when deleting genre."""
-        request = factory.delete("/api/v1/genres/1/")
+        genre_id = str(fake_data.random_int())
+        request = factory.delete(f"/api/v1/genres/{genre_id}/")
         force_authenticate(request, user=mock_user)
-        response = detail_view(request, id="1")
+        response = detail_view(request, id=genre_id)
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     @patch("books.views.genre_views.Genre")
@@ -122,39 +123,42 @@ class TestGenreDetailView:
         self, MockGenre, detail_view, factory, mock_user, fake_data
     ):
         """Non-admin user should get 403 when updating genre."""
+        genre_id = str(fake_data.random_int())
         request = factory.patch(
-            "/api/v1/genres/1/", {"name": fake_data.word()}, format="json"
+            f"/api/v1/genres/{genre_id}/", {"name": fake_data.word()}, format="json"
         )
         force_authenticate(request, user=mock_user)
-        response = detail_view(request, id="1")
+        response = detail_view(request, id=genre_id)
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    def test_get_genre_not_found(self, detail_view, factory, mock_admin):
+    def test_get_genre_not_found(self, detail_view, factory, mock_admin, fake_data):
         """Non-existent genre should return 404."""
         with patch(
             "books.views.genre_views.GenreDetailView.get_object", return_value=None
         ):
-            request = factory.get("/api/v1/genres/1/")
+            genre_id = str(fake_data.random_int())
+            request = factory.get(f"/api/v1/genres/{genre_id}/")
             force_authenticate(request, user=mock_admin)
-            response = detail_view(request, id="1")
+            response = detail_view(request, id=genre_id)
             assert response.status_code == status.HTTP_404_NOT_FOUND
             assert response.data["error"]["message"] == "Genre not found."
 
     @patch("books.views.genre_views.Genre.all_objects.get")
     def test_get_genre_admin_success(self, mock_get, detail_view, factory, mock_admin, fake_data):
         """Admin should retrieve a genre successfully."""
+        genre_id = str(fake_data.random_int())
         mock_genre = MagicMock()
-        mock_genre.id = "1"
+        mock_genre.id = genre_id
         mock_genre.name = fake_data.word()
         mock_get.return_value = mock_genre
 
-        request = factory.get("/api/v1/genres/1/")
+        request = factory.get(f"/api/v1/genres/{genre_id}/")
         force_authenticate(request, user=mock_admin)
         
         with patch("books.views.genre_views.GenreSerializer") as MockSer:
             mock_ser_instance = MockSer.return_value
             mock_ser_instance.data = {"id": mock_genre.id, "name": mock_genre.name}
-            response = detail_view(request, id="1")
+            response = detail_view(request, id=genre_id)
             
             assert response.status_code == status.HTTP_200_OK
             assert response.data["name"] == mock_genre.name
@@ -164,19 +168,20 @@ class TestGenreDetailView:
     @patch("books.views.genre_views.Genre.objects.get")
     def test_get_genre_non_admin_success(self, mock_get, detail_view, factory, mock_user, fake_data):
         """Non-admin should retrieve a genre successfully and exclude deleted_at."""
+        genre_id = str(fake_data.random_int())
         mock_genre = MagicMock()
-        mock_genre.id = "1"
+        mock_genre.id = genre_id
         mock_genre.name = fake_data.word()
         mock_get.return_value = mock_genre
 
-        request = factory.get("/api/v1/genres/1/")
+        request = factory.get(f"/api/v1/genres/{genre_id}/")
         mock_user.role = UserRole.USER
         force_authenticate(request, user=mock_user)
         
         with patch("books.views.genre_views.GenreSerializer") as MockSer:
             mock_ser_instance = MockSer.return_value
             mock_ser_instance.data = {"id": mock_genre.id, "name": mock_genre.name}
-            response = detail_view(request, id="1")
+            response = detail_view(request, id=genre_id)
             
             assert response.status_code == status.HTTP_200_OK
             assert MockSer.call_args[1].get('exclude_fields') == ['deleted_at']
@@ -184,50 +189,55 @@ class TestGenreDetailView:
     @patch("books.views.genre_views.GenreDetailView.get_object")
     def test_patch_genre_admin_success(self, mock_get_object, detail_view, factory, mock_admin, fake_data):
         """Admin should update a genre successfully."""
+        genre_id = str(fake_data.random_int())
         mock_genre = MagicMock()
-        mock_genre.id = "1"
+        mock_genre.id = genre_id
         mock_get_object.return_value = mock_genre
 
-        request = factory.patch("/api/v1/genres/1/", {"name": "Updated"}, format="json")
+        updated_name = fake_data.word()
+        request = factory.patch(f"/api/v1/genres/{genre_id}/", {"name": updated_name}, format="json")
         force_authenticate(request, user=mock_admin)
         
         with patch("books.views.genre_views.GenreSerializer") as MockSer:
             mock_ser_instance = MockSer.return_value
             mock_ser_instance.is_valid.return_value = True
-            mock_ser_instance.data = {"id": "1", "name": "Updated"}
-            response = detail_view(request, id="1")
+            mock_ser_instance.data = {"id": genre_id, "name": updated_name}
+            response = detail_view(request, id=genre_id)
             
             assert response.status_code == status.HTTP_200_OK
             mock_ser_instance.save.assert_called_once()
 
     @patch("books.views.genre_views.GenreDetailView.get_object", return_value=None)
-    def test_patch_genre_admin_not_found(self, mock_get_object, detail_view, factory, mock_admin):
+    def test_patch_genre_admin_not_found(self, mock_get_object, detail_view, factory, mock_admin, fake_data):
         """Admin updating non-existent genre returns 404."""
-        request = factory.patch("/api/v1/genres/1/", {"name": "Updated"}, format="json")
+        genre_id = str(fake_data.random_int())
+        request = factory.patch(f"/api/v1/genres/{genre_id}/", {"name": fake_data.word()}, format="json")
         force_authenticate(request, user=mock_admin)
-        response = detail_view(request, id="1")
+        response = detail_view(request, id=genre_id)
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     @patch("books.views.genre_views.GenreDetailView.get_object")
-    def test_delete_genre_admin_success(self, mock_get_object, detail_view, factory, mock_admin):
+    def test_delete_genre_admin_success(self, mock_get_object, detail_view, factory, mock_admin, fake_data):
         """Admin should delete a genre successfully."""
+        genre_id = str(fake_data.random_int())
         mock_genre = MagicMock()
-        mock_genre.id = "1"
+        mock_genre.id = genre_id
         mock_get_object.return_value = mock_genre
 
-        request = factory.delete("/api/v1/genres/1/")
+        request = factory.delete(f"/api/v1/genres/{genre_id}/")
         force_authenticate(request, user=mock_admin)
-        response = detail_view(request, id="1")
+        response = detail_view(request, id=genre_id)
         
         assert response.status_code == status.HTTP_204_NO_CONTENT
         mock_genre.delete.assert_called_once()
 
     @patch("books.views.genre_views.GenreDetailView.get_object", return_value=None)
-    def test_delete_genre_admin_not_found(self, mock_get_object, detail_view, factory, mock_admin):
+    def test_delete_genre_admin_not_found(self, mock_get_object, detail_view, factory, mock_admin, fake_data):
         """Admin deleting non-existent genre returns 404."""
-        request = factory.delete("/api/v1/genres/1/")
+        genre_id = str(fake_data.random_int())
+        request = factory.delete(f"/api/v1/genres/{genre_id}/")
         force_authenticate(request, user=mock_admin)
-        response = detail_view(request, id="1")
+        response = detail_view(request, id=genre_id)
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 

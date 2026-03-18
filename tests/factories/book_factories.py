@@ -3,8 +3,7 @@ from factory.django import DjangoModelFactory
 from books.models import Genre, Book, BookGenre, UserBook
 from common.enums import RequestStatus, BookStatus
 from tests.factories.account_factories import TenantFactory, UserFactory
-import random
-import string
+
 
 
 class GenreFactory(DjangoModelFactory):
@@ -26,7 +25,7 @@ class BookFactory(DjangoModelFactory):
     )
     title = factory.Faker("sentence", nb_words=3)
     author = factory.Faker("name")
-    published_year = factory.Faker("random_int", min=1900, max=2024)
+    published_year = factory.Faker("random_int", min=1900, max=2026)
     request_status = RequestStatus.APPROVED
 
     isbn = factory.Faker("numerify", text="#############")  # 13 digits
