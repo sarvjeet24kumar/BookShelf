@@ -46,22 +46,24 @@ services:
       - certbot_etc:/etc/letsencrypt
       - certbot_var:/var/lib/letsencrypt
       - certbot_www:/var/www/certbot
-    command: >
+    command: |
       /bin/sh -c "
-      DOMAIN_NAME=$${DOMAIN_NAME:-bookshelf.isroot.in};
-      envsubst '$$DOMAIN_NAME' < /etc/nginx/nginx.conf.template > /etc/nginx/conf.d/default.conf &&
-      if [ ! -f /etc/letsencrypt/live/$${DOMAIN_NAME}/fullchain.pem ]; then
-        echo 'Creating dummy certificates for '$${DOMAIN_NAME}'...';
-        mkdir -p /etc/letsencrypt/live/$${DOMAIN_NAME};
-        openssl req -x509 -nodes -newkey rsa:2048 -days 1 -keyout /etc/letsencrypt/live/$${DOMAIN_NAME}/privkey.pem -out /etc/letsencrypt/live/$${DOMAIN_NAME}/fullchain.pem -subj '/CN=localhost';
-      fi;
-      nginx -g 'daemon off;' &
-      echo 'Waiting for real certificate to trigger reload...';
-      (while [ ! -f /etc/letsencrypt/live/$${DOMAIN_NAME}/cert.pem ]; do sleep 10; done; echo 'Real cert detected, reloading Nginx...'; nginx -s reload) &
-      while :; do
-        sleep 6h & wait $${!};
-        nginx -s reload;
-      done"
+        DOMAIN_NAME=$${DOMAIN_NAME:-bookshelf.isroot.in}
+        envsubst '$$DOMAIN_NAME' < /etc/nginx/nginx.conf.template > /etc/nginx/conf.d/default.conf
+        if [ ! -f /etc/letsencrypt/live/$${DOMAIN_NAME}/fullchain.pem ]; then
+          echo \"Creating dummy certificates for $$DOMAIN_NAME...\"
+          mkdir -p /etc/letsencrypt/live/$$DOMAIN_NAME
+          openssl req -x509 -nodes -newkey rsa:2048 -days 1 -keyout /etc/letsencrypt/live/$$DOMAIN_NAME/privkey.pem -out /etc/letsencrypt/live/$$DOMAIN_NAME/fullchain.pem -subj '/CN=localhost'
+        fi
+        nginx -g 'daemon off;' &
+        echo \"Waiting for real certificate...\"
+        while [ ! -f /etc/letsencrypt/live/$$DOMAIN_NAME/cert.pem ]; do sleep 10; done
+        echo \"Real cert detected, reloading Nginx...\"
+        nginx -s reload
+        while :; do
+          sleep 6h
+          nginx -s reload
+        done"
     restart: unless-stopped
 
   worker:
@@ -122,29 +124,28 @@ services:
     environment:
       - DOMAIN_NAME=${DOMAIN_NAME:-bookshelf.isroot.in}
       - CERTBOT_EMAIL=${CERTBOT_EMAIL:-jha.sarvjeet1@gmail.com}
-    entrypoint: >
+    entrypoint: |
       /bin/sh -c "
-      trap exit TERM;
-      DOMAIN_NAME=$${DOMAIN_NAME:-bookshelf.isroot.in};
-      CERTBOT_EMAIL=$${CERTBOT_EMAIL:-jha.sarvjeet1@gmail.com};
-      echo 'Waiting for Nginx to be ready (30s)...';
-      sleep 30;
-      if [ ! -f /etc/letsencrypt/live/$${DOMAIN_NAME}/cert.pem ]; then
-        echo 'Clearing dummy certificates for '$${DOMAIN_NAME}' before requesting real ones...';
-        rm -rf /etc/letsencrypt/live/$${DOMAIN_NAME};
-        rm -rf /etc/letsencrypt/archive/$${DOMAIN_NAME};
-        for i in 1 2 3; do
-          echo 'Attempt '$${i}' to acquire certificate for '$${DOMAIN_NAME}'...';
-          certbot certonly --webroot -w /var/www/certbot -d $${DOMAIN_NAME} --email $${CERTBOT_EMAIL} --agree-tos --no-eff-email --non-interactive && break;
-          echo 'Attempt '$${i}' failed, retrying in 30 seconds...';
-          sleep 30;
-        done;
-      fi;
-      while :; do
-        echo 'Checking for certificate renewal...';
-        certbot renew;
-        sleep 12h & wait $${!};
-      done"
+        DOMAIN_NAME=$${DOMAIN_NAME:-bookshelf.isroot.in}
+        CERTBOT_EMAIL=$${CERTBOT_EMAIL:-jha.sarvjeet1@gmail.com}
+        echo \"Waiting for Nginx to be ready (30s)...\"
+        sleep 30
+        if [ ! -f /etc/letsencrypt/live/$$DOMAIN_NAME/cert.pem ]; then
+          echo \"Clearing dummy certificates for $$DOMAIN_NAME...\"
+          rm -rf /etc/letsencrypt/live/$$DOMAIN_NAME
+          rm -rf /etc/letsencrypt/archive/$$DOMAIN_NAME
+          for i in 1 2 3; do
+            echo \"Attempt $$i to acquire certificate for $$DOMAIN_NAME...\"
+            certbot certonly --webroot -w /var/www/certbot -d $$DOMAIN_NAME --email $$CERTBOT_EMAIL --agree-tos --no-eff-email --non-interactive && break
+            echo \"Attempt $$i failed, retrying in 30 seconds...\"
+            sleep 30
+          done
+        fi
+        while :; do
+          echo \"Checking for certificate renewal...\"
+          certbot renew
+          sleep 12h
+        done"
 
 volumes:
   static_files:
