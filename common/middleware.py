@@ -12,7 +12,6 @@ from tenants.context import get_current_tenant
 
 logger = logging.getLogger(__name__)
 
-
 class RequestIDMiddleware:
     """
     Middleware to generate or extract correlation IDs for request tracing.
@@ -30,7 +29,6 @@ class RequestIDMiddleware:
         response = self.get_response(request)
         response["X-Request-ID"] = request_id
         return response
-
 
 class RequestLogMiddleware:
     """
@@ -51,6 +49,11 @@ class RequestLogMiddleware:
 
         execution_time_ms = int((time.time() - start_time) * 1000)
 
+        # Silence irrelevant bot-related logs (404 on root, favicon, robots.txt)
+        is_bot_path = request.path in ["/", "/favicon.ico", "/robots.txt"]
+        if response.status_code == 404 and is_bot_path:
+            return response
+
         if response.status_code < 400:
             logger.info(
                 f"{request.method} {request.path} {response.status_code} ({execution_time_ms}ms)"
@@ -66,7 +69,6 @@ class RequestLogMiddleware:
             )
 
         return response
-
 
 class API404Middleware:
     def __init__(self, get_response):
