@@ -55,6 +55,7 @@ services:
         openssl req -x509 -nodes -newkey rsa:2048 -days 1 -keyout /etc/letsencrypt/live/${DOMAIN_NAME}/privkey.pem -out /etc/letsencrypt/live/${DOMAIN_NAME}/fullchain.pem -subj '/CN=localhost';
       fi;
       nginx -g 'daemon off;' &
+      (while [ ! -f /etc/letsencrypt/live/${DOMAIN_NAME}/cert.pem ]; do sleep 10; done; echo 'Real cert detected, reloading Nginx...'; nginx -s reload) &
       while :; do
         sleep 6h & wait $${!};
         nginx -s reload;
@@ -119,7 +120,7 @@ services:
     entrypoint: >
       /bin/sh -c "
       trap exit TERM;
-      if [ ! -d '/etc/letsencrypt/live/${DOMAIN_NAME}' ]; then
+      if [ ! -f '/etc/letsencrypt/live/${DOMAIN_NAME}/cert.pem' ]; then
         echo 'Requesting initial certificates...';
         certbot certonly --webroot -w /var/www/certbot -d ${DOMAIN_NAME} --email ${CERTBOT_EMAIL} --agree-tos --no-eff-email --non-interactive;
       fi;
