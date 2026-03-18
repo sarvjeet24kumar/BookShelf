@@ -127,8 +127,10 @@ services:
       DOMAIN_NAME=$${DOMAIN_NAME:-bookshelf.isroot.in};
       CERTBOT_EMAIL=$${CERTBOT_EMAIL:-jha.sarvjeet1@gmail.com};
       if [ ! -f /etc/letsencrypt/live/$${DOMAIN_NAME}/cert.pem ]; then
-        echo 'Requesting initial certificates for '$${DOMAIN_NAME}'...';
-        certbot certonly --webroot -w /var/www/certbot -d $${DOMAIN_NAME} --email $${CERTBOT_EMAIL} --agree-tos --no-eff-email --non-interactive;
+        echo 'Clearing dummy certificates for '$${DOMAIN_NAME}' before requesting real ones...';
+        rm -rf /etc/letsencrypt/live/$${DOMAIN_NAME};
+        rm -rf /etc/letsencrypt/archive/$${DOMAIN_NAME};
+        certbot certonly --webroot -w /var/www/certbot -d $${DOMAIN_NAME} --email $${CERTBOT_EMAIL} --agree-tos --no-eff-email --non-interactive || true;
       fi;
       while :; do
         certbot renew;
