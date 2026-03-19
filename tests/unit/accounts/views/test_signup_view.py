@@ -18,7 +18,7 @@ def factory():
 
 
 class TestSignupView:
-    """Unit tests for SignupView.post()."""
+    """Unit tests for SignupView."""
 
     @patch("accounts.views.registration_views.email_verification_service")
     @patch("accounts.views.registration_views.User")

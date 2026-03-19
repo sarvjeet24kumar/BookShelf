@@ -1,10 +1,11 @@
 from .base import *
 
-MIDDLEWARE = [
-    "pyinstrument.middleware.ProfilerMiddleware",
-    "silk.middleware.SilkyMiddleware",
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
-] + MIDDLEWARE
+if not env.bool("LOCUST_PERF_TEST", default=False):
+    MIDDLEWARE = [
+        "pyinstrument.middleware.ProfilerMiddleware",
+        "silk.middleware.SilkyMiddleware",
+        "debug_toolbar.middleware.DebugToolbarMiddleware",
+    ] + MIDDLEWARE
 
 DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*", "bookshelf.isroot.in"])
@@ -46,4 +47,4 @@ def show_pyinstrument(request):
 
 PYINSTRUMENT_SHOW_CALLBACK = "config.settings.dev.show_pyinstrument"
 
-PYINSTRUMENT_PROFILE_DIR = BASE_DIR / "profiles"
+# PYINSTRUMENT_PROFILE_DIR = BASE_DIR / "profiles"

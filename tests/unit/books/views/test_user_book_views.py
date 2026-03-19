@@ -33,19 +33,25 @@ class TestUserBooksViewPost:
     @patch("books.views.user_book_views.CommonPagination")
     @patch("books.views.user_book_views.MyBookFilter")
     @patch("books.views.user_book_views.Book")
-    def test_get_user_books(self, MockBook, MockFilter, MockPaginator, list_view, factory, mock_user):
+    def test_get_user_books(
+        self, MockBook, MockFilter, MockPaginator, list_view, factory, mock_user
+    ):
         """List user books should return paginated response."""
         mock_qs = MagicMock()
-        MockBook.objects.filter.return_value.select_related.return_value.prefetch_related.return_value = mock_qs
+        MockBook.objects.filter.return_value.select_related.return_value.prefetch_related.return_value = (
+            mock_qs
+        )
         MockFilter.return_value.qs = mock_qs
-        
+
         mock_paginator_instance = MockPaginator.return_value
         mock_paginator_instance.paginate_queryset.return_value = []
-        mock_paginator_instance.get_paginated_response.return_value = Response({"data": []})
+        mock_paginator_instance.get_paginated_response.return_value = Response(
+            {"data": []}
+        )
 
         request = factory.get(f"/api/v1/users/{mock_user.id}/books/")
         force_authenticate(request, user=mock_user)
-        
+
         with patch.object(UserBooksView, "check_permission", return_value=mock_user):
             with patch("books.views.user_book_views.UserBookListSerializer") as MockSer:
                 MockSer.return_value.data = []
@@ -166,8 +172,7 @@ class TestUserBooksViewPost:
         MockBook.objects.get.return_value = mock_book
 
         MockUserBook.all_objects.filter.return_value.first.return_value = None
-        MockUserBook.objects.filter.return_value.count.return_value = 100  # Over limit
-
+        MockUserBook.objects.filter.return_value.count.return_value = 100
         mock_user.tenant = MagicMock()
         mock_user.tenant.subscription_plan = SubscriptionPlan.FREE
 
@@ -201,9 +206,9 @@ class TestUserBooksViewPost:
         MockBook.objects.get.return_value = mock_book
 
         mock_user_book = MagicMock()
-        mock_user_book.deleted_at = "some_date"
+        mock_user_book.deleted_at = "2025-05-21"
         MockUserBook.all_objects.filter.return_value.first.return_value = mock_user_book
-        MockUserBook.objects.filter.return_value.count.return_value = 1 # Under limit
+        MockUserBook.objects.filter.return_value.count.return_value = 1
 
         mock_user.tenant = MagicMock()
         mock_user.tenant.subscription_plan = SubscriptionPlan.FREE
@@ -237,7 +242,9 @@ class TestUserBookDetailView:
 
         book_id = str(fake_data.random_int())
         with patch.object(
-            UserBookDetailView, "get_user_book", return_value=(mock_user_book, mock_user)
+            UserBookDetailView,
+            "get_user_book",
+            return_value=(mock_user_book, mock_user),
         ):
             request = factory.delete(f"/api/v1/users/{mock_user.id}/books/{book_id}/")
             force_authenticate(request, user=mock_user)
@@ -246,47 +253,61 @@ class TestUserBookDetailView:
             mock_user_book.soft_delete.assert_called_once()
 
     @patch("books.views.user_book_views.UserBook")
-    def test_get_user_book_success(self, MockUserBook, detail_view, factory, mock_user, fake_data):
+    def test_get_user_book_success(
+        self, MockUserBook, detail_view, factory, mock_user, fake_data
+    ):
         """get_user_book returns user_book and target_user."""
         mock_user_book = MagicMock()
         MockUserBook.objects.filter.return_value.first.return_value = mock_user_book
         mock_user_book.deleted_at = None
-        
+
         book_id = str(fake_data.random_int())
         request = factory.get(f"/api/v1/users/{mock_user.id}/books/{book_id}/")
         force_authenticate(request, user=mock_user)
-        
+
         view = UserBookDetailView()
-        with patch.object(UserBookDetailView, "check_permission", return_value=mock_user):
+        with patch.object(
+            UserBookDetailView, "check_permission", return_value=mock_user
+        ):
             obj, u = view.get_user_book(request, mock_user.id, book_id)
             assert obj == mock_user_book
             assert u == mock_user
 
     @patch("books.views.user_book_views.UserBook")
-    def test_get_user_book_not_found(self, MockUserBook, detail_view, factory, mock_user, fake_data):
+    def test_get_user_book_not_found(
+        self, MockUserBook, detail_view, factory, mock_user, fake_data
+    ):
         """get_user_book raises NotFound when book isn't in library."""
         MockUserBook.objects.filter.return_value.first.return_value = None
-        
+
         book_id = str(fake_data.random_int())
         request = factory.get(f"/api/v1/users/{mock_user.id}/books/{book_id}/")
         force_authenticate(request, user=mock_user)
-        
+
         view = UserBookDetailView()
-        with patch.object(UserBookDetailView, "check_permission", return_value=mock_user):
+        with patch.object(
+            UserBookDetailView, "check_permission", return_value=mock_user
+        ):
             with pytest.raises(NotFound):
                 view.get_user_book(request, mock_user.id, book_id)
 
     @patch("books.views.user_book_views.Book")
-    def test_get_book_from_library(self, MockBook, detail_view, factory, mock_user, fake_data):
+    def test_get_book_from_library(
+        self, MockBook, detail_view, factory, mock_user, fake_data
+    ):
         """GET specific book in library."""
         mock_book = MagicMock()
-        MockBook.objects.filter.return_value.select_related.return_value.prefetch_related.return_value.first.return_value = mock_book
-        
+        MockBook.objects.filter.return_value.select_related.return_value.prefetch_related.return_value.first.return_value = (
+            mock_book
+        )
+
         book_id = str(fake_data.random_int())
-        with patch.object(UserBookDetailView, "check_permission", return_value=mock_user):
+        with patch.object(
+            UserBookDetailView, "check_permission", return_value=mock_user
+        ):
             with patch("books.views.user_book_views.UserBookListSerializer") as MockSer:
                 MockSer.return_value.data = {"status": "READING"}
-                
+
                 request = factory.get(f"/api/v1/users/{mock_user.id}/books/{book_id}/")
                 force_authenticate(request, user=mock_user)
                 response = detail_view(request, user_id=mock_user.id, book_id=book_id)
@@ -295,17 +316,25 @@ class TestUserBookDetailView:
     def test_patch_book_status(self, detail_view, factory, mock_user, fake_data):
         """PATCH reading status of book in library."""
         mock_user_book = MagicMock()
-        
+
         book_id = str(fake_data.random_int())
-        with patch.object(UserBookDetailView, "get_user_book", return_value=(mock_user_book, mock_user)):
-            with patch("books.views.user_book_views.UserBookUpdateSerializer") as MockSer:
+        with patch.object(
+            UserBookDetailView,
+            "get_user_book",
+            return_value=(mock_user_book, mock_user),
+        ):
+            with patch(
+                "books.views.user_book_views.UserBookUpdateSerializer"
+            ) as MockSer:
                 mock_ser = MockSer.return_value
                 mock_ser.is_valid.return_value = True
                 mock_ser.validated_data = {"status": BookStatus.COMPLETED}
-                
-                request = factory.patch(f"/api/v1/users/{mock_user.id}/books/{book_id}/", {"status": BookStatus.COMPLETED})
+
+                request = factory.patch(
+                    f"/api/v1/users/{mock_user.id}/books/{book_id}/",
+                    {"status": BookStatus.COMPLETED},
+                )
                 force_authenticate(request, user=mock_user)
                 response = detail_view(request, user_id=mock_user.id, book_id=book_id)
                 assert response.status_code == status.HTTP_200_OK
                 mock_user_book.save.assert_called_once()
-

@@ -84,7 +84,6 @@ class TestChangePasswordSerializerUnit:
 
     def test_mismatched_new_passwords(self, fake_data):
         """Test that mismatched new passwords raise ValidationError."""
-        # Ensure passwords meet requirements
         current_password = fake_data.password(length=10, special_chars=True, digits=True) + "!"
         new_password = fake_data.password(length=10, special_chars=True, digits=True) + "@"
         confirm_password = fake_data.password(length=10, special_chars=True, digits=True) + "#"

@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import MagicMock
 from books.serializers.book_serializers import (
     BookCreateSerializer,
     BookUpdateSerializer,
@@ -24,7 +25,6 @@ class TestBookCreateSerializerUnit:
         non_existent_id = fake_data.uuid4()
         serializer = BookCreateSerializer(data={"genres": [non_existent_id]})
         assert not serializer.is_valid()
-        # The error message depends on whether one or all are missing
         error_str = str(serializer.errors.get("genres", []))
         assert (
             "IDs not found" in error_str
@@ -45,7 +45,6 @@ class TestBookUpdateSerializerUnit:
 
     def test_non_admin_cannot_change_status(self):
         """Test that non-admin users cannot change request_status."""
-        # We need a mock request and user for the context
         mock_user = MagicMock(role=UserRole.USER)
         mock_request = MagicMock(user=mock_user)
 
@@ -57,6 +56,3 @@ class TestBookUpdateSerializerUnit:
         assert "Only admins can change the request status" in str(
             serializer.errors.get("request_status", [])
         )
-
-
-from unittest.mock import MagicMock

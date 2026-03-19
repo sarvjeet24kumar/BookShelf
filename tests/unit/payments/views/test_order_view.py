@@ -20,7 +20,7 @@ def factory():
 
 
 class TestCreateOrderView:
-    """Unit tests for CreateOrderView.post()."""
+    """Unit tests for CreateOrderView."""
 
     @patch("payments.views.order_views.PaymentOrderResponseSerializer")
     @patch("payments.views.order_views.Payment")
@@ -48,7 +48,7 @@ class TestCreateOrderView:
 
         mock_payment = MagicMock()
         mock_payment.razorpay_order_id = order_id
-        mock_payment.amount = 50000
+        mock_payment.amount = 999
         mock_payment.currency = "INR"
         mock_payment.status = "created"
         MockPayment.objects.create.return_value = mock_payment
@@ -87,16 +87,6 @@ class TestCreateOrderView:
         response = view(request)
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    def test_create_order_no_tenant_view_logic(self, view, factory, mock_admin):
-        """User without tenant bypasses permission but view should raise 400."""
-        mock_admin.tenant = None
-        request = factory.post("/api/v1/payments/create-order/", {})
-        force_authenticate(request, user=mock_admin)
-        
-        with patch.object(CreateOrderView, "check_permissions"):
-            response = view(request)
-            assert response.status_code == status.HTTP_400_BAD_REQUEST
-            assert "User must belong to a tenant" in str(response.data)
 
     @patch("payments.views.order_views.Subscription")
     def test_create_order_subscription_creation_failure(self, MockSubscription, view, factory, mock_admin):

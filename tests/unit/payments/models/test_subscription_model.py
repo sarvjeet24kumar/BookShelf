@@ -16,7 +16,6 @@ class TestSubscriptionModelUnit:
 
     def test_subscription_activate_logic(self, subscription, payment):
         """Test the activate method updates subscription, tenant and payment."""
-        # Initial state
         subscription.status = SubscriptionStatus.CREATED
         subscription.save()
         tenant = subscription.tenant
@@ -25,10 +24,8 @@ class TestSubscriptionModelUnit:
         payment.status = PaymentStatus.VERIFIED
         payment.save()
 
-        # Execute activation
         subscription.activate(payment)
 
-        # Re-fetch and assert
         subscription.refresh_from_db()
         tenant.refresh_from_db()
         payment.refresh_from_db()

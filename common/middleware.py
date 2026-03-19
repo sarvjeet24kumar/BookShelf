@@ -49,7 +49,6 @@ class RequestLogMiddleware:
 
         execution_time_ms = int((time.time() - start_time) * 1000)
 
-        # Silence irrelevant bot-related logs (404 on root, favicon, robots.txt)
         is_bot_path = request.path in ["/", "/favicon.ico", "/robots.txt"]
         if response.status_code == 404 and is_bot_path:
             return response

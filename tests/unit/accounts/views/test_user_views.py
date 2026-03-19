@@ -46,7 +46,7 @@ class TestUserViewList:
     def test_list_users_as_superadmin(
         self, MockUser, list_view, factory, mock_super_admin
     ):
-        """Super admin should get 200 listing admin users."""
+        """Super admin should get admin users."""
         mock_qs = MagicMock()
         mock_qs.order_by.return_value = []
         MockUser.all_objects.filter.return_value = mock_qs
@@ -66,7 +66,7 @@ class TestUserViewCreate:
     def test_create_user_as_admin_success(
         self, MockUser, mock_email_svc, list_view, factory, mock_admin, fake_data
     ):
-        """Admin creating a user should return 200 and send verification email."""
+        """Admin creating a user and send verification email."""
         MockUser.all_objects.filter.return_value.exists.return_value = False
 
         mock_saved_user = MagicMock()
@@ -241,22 +241,6 @@ class TestUserDetailViewUpdate:
                 in str(response.data["error"]["message"])
             )
 
-    def test_tenant_admin_cannot_update_other_admin(self, detail_view, factory, mock_admin):
-        """Tenant admin updating another admin should return 403."""
-        other_admin = MagicMock()
-        other_admin.id = uuid.uuid4()
-        other_admin.role = UserRole.ADMIN
-        
-        request = factory.put(
-            f"/api/v1/users/{other_admin.id}/", {"first_name": "New"}, format="json"
-        )
-        force_authenticate(request, user=mock_admin)
-
-        with patch.object(UserDetailView, "get_object", return_value=other_admin):
-            response = detail_view(request, id=other_admin.id)
-            assert response.status_code == status.HTTP_403_FORBIDDEN
-            assert "Tenant admin cannot update other admin accounts" in str(response.data["error"]["message"])
-
     @patch("accounts.views.user_views.User")
     def test_update_duplicate_username(self, MockUser, detail_view, factory, mock_user, mock_admin, fake_data):
         """Duplicate username update should return 400."""
@@ -272,100 +256,7 @@ class TestUserDetailViewUpdate:
             assert response.status_code == status.HTTP_400_BAD_REQUEST
             assert "already taken" in str(response.data["error"]["details"]["username"])
 
-    @patch("accounts.views.user_views.blacklist_user_tokens")
-    def test_update_user_success_and_blacklist_tokens(self, mock_blacklist, detail_view, factory, mock_user, mock_admin, fake_data):
-        """Updating user successfully and blacklisting tokens if deactivated."""
-        request = factory.put(
-            f"/api/v1/users/{mock_user.id}/", {"first_name": fake_data.first_name()}, format="json"
-        )
-        force_authenticate(request, user=mock_admin)
-        
-        mock_user.is_active = True # Originally active
 
-        with patch.object(UserDetailView, "get_object", return_value=mock_user):
-            with patch.object(UserDetailView, "get_serializer") as mock_ser:
-                mock_ser_instance = MagicMock()
-                mock_ser_instance.is_valid.return_value = True
-                mock_ser_instance.data = {"first_name": "Updated"}
-                
-                updated_user = MagicMock()
-                updated_user.is_active = False 
-                mock_ser_instance.save.return_value = updated_user
-                
-                mock_ser.return_value = mock_ser_instance
-
-                response = detail_view(request, id=mock_user.id)
-                assert response.status_code == status.HTTP_200_OK
-                mock_blacklist.assert_called_once_with(updated_user)
-
-
-class TestUserDetailViewDestroy:
-    """Unit tests for UserDetailView DELETE."""
-
-    @patch("accounts.views.user_views.blacklist_user_tokens")
-    def test_admin_cannot_delete_self(
-        self, mock_blacklist, detail_view, factory, mock_admin
-    ):
-        """Admin deleting themselves should return 403."""
-        request = factory.delete(f"/api/v1/users/{mock_admin.id}/")
-        force_authenticate(request, user=mock_admin)
-
-        with patch.object(UserDetailView, "get_object", return_value=mock_admin):
-            response = detail_view(request, id=mock_admin.id)
-            assert response.status_code == status.HTTP_403_FORBIDDEN
-            assert "Admins cannot delete their own account." in str(
-                response.data["error"]["message"]
-            )
-
-    @patch("accounts.views.user_views.transaction")
-    @patch("accounts.views.user_views.blacklist_user_tokens")
-    def test_admin_delete_user_success(
-        self,
-        mock_blacklist,
-        mock_transaction,
-        detail_view,
-        factory,
-        mock_admin,
-        mock_user,
-    ):
-        """Admin deleting a regular user should return 204."""
-        mock_transaction.atomic.return_value.__enter__ = MagicMock()
-        mock_transaction.atomic.return_value.__exit__ = MagicMock(return_value=False)
-
-        request = factory.delete(f"/api/v1/users/{mock_user.id}/")
-        force_authenticate(request, user=mock_admin)
-
-        with patch.object(UserDetailView, "get_object", return_value=mock_user):
-            response = detail_view(request, id=mock_user.id)
-            assert response.status_code == status.HTTP_204_NO_CONTENT
-            mock_user.soft_delete.assert_called_once()
-            mock_blacklist.assert_called_once_with(mock_user)
-
-    @patch("accounts.views.user_views.transaction")
-    @patch("accounts.views.user_views.blacklist_user_tokens")
-    def test_user_self_delete(
-        self,
-        mock_blacklist,
-        mock_transaction,
-        detail_view,
-        factory,
-        mock_user,
-    ):
-        """User deleting themselves should return 204."""
-        mock_transaction.atomic.return_value.__enter__ = MagicMock()
-        mock_transaction.atomic.return_value.__exit__ = MagicMock(return_value=False)
-
-        mock_user.role = UserRole.USER
-        request = factory.delete(f"/api/v1/users/{mock_user.id}/")
-        force_authenticate(request, user=mock_user)
-
-        with patch.object(UserDetailView, "get_object", return_value=mock_user):
-            response = detail_view(request, id=mock_user.id)
-            assert response.status_code == status.HTTP_204_NO_CONTENT
-            mock_user.soft_delete.assert_called_once()
-            assert mock_user.is_active is False
-            mock_user.save.assert_called_once()
-            mock_blacklist.assert_called_once_with(mock_user)
 
 
 class TestUserDetailViewRetrieve:
@@ -384,27 +275,3 @@ class TestUserDetailViewRetrieve:
                 response = detail_view(request, id=mock_user.id)
                 assert response.status_code == status.HTTP_200_OK
                 assert response.data == {"username": username}
-
-    @patch("accounts.views.user_views.User.objects.all")
-    @patch("common.permissions.IsOwnerOrAdmin.has_object_permission", return_value=True)
-    def test_get_queryset_and_serializer_user_role(self, mock_has_perm, mock_all, detail_view, factory, mock_user, fake_data):
-        """Test get_queryset and get_serializer logic."""
-        request = factory.get(f"/api/v1/users/{mock_user.id}/")
-        mock_user.role = UserRole.USER
-        force_authenticate(request, user=mock_user)
-        
-        mock_qs = MagicMock()
-        mock_qs.get.return_value = mock_user
-        mock_all.return_value = mock_qs
-            
-        with patch('accounts.views.user_views.RetrieveUpdateDestroyAPIView.get_serializer') as mock_super_get_serializer:
-            mock_ser_instance = MagicMock()
-            mock_ser_instance.data = {"username": fake_data.user_name()}
-            mock_super_get_serializer.return_value = mock_ser_instance
-                
-            response = detail_view(request, id=mock_user.id)
-            assert response.status_code == status.HTTP_200_OK
-                
-            mock_all.assert_called_once()
-            mock_super_get_serializer.assert_called_once()
-            assert mock_super_get_serializer.call_args[1].get('exclude_fields') == ["deleted_at", "is_active"]

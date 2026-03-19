@@ -45,7 +45,6 @@ class TestTenantListCreateView:
         force_authenticate(request, user=mock_super_admin)
         response = list_view(request)
         assert response.status_code == status.HTTP_200_OK
-        # Handle both direct list and paginated dict response
         if isinstance(response.data, dict):
             assert "data" in response.data
             assert isinstance(response.data["data"], list)

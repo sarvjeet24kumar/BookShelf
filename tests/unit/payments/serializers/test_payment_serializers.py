@@ -15,7 +15,7 @@ class TestPaymentSerializersUnit:
         order_id = f"order_{fake_data.msisdn()[:9]}"
         data = {
             "razorpay_order_id": order_id,
-            "amount": 50000,
+            "amount": 999,
             "currency": "INR",
             "status": "created",
         }

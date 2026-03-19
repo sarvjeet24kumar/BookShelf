@@ -1,6 +1,5 @@
 import pytest
 from tenants.models import Tenant
-from common.enums import UserRole
 from django.conf import settings
 from rest_framework.test import APIClient
 from django.contrib.auth import get_user_model
@@ -19,7 +18,6 @@ if hasattr(settings, "REST_FRAMEWORK"):
         "auth_throttle": None,
     }
 
-# Register factories
 register(TenantFactory)
 register(UserFactory)
 register(GenreFactory)
@@ -37,13 +35,13 @@ def api_client():
 
 @pytest.fixture
 def admin_user(user_factory, tenant):
-    """Fixture for an admin user using FactoryBoy traits."""
+    """Fixture for an admin user ."""
     return user_factory(tenant=tenant, is_admin=True)
 
 
 @pytest.fixture
 def super_admin(user_factory):
-    """Fixture for a super admin using FactoryBoy traits."""
+    """Fixture for a super admin."""
     return user_factory(is_super_admin=True)
 
 

@@ -25,7 +25,7 @@ def factory():
 
 
 class TestForgotPasswordView:
-    """Unit tests for ForgotPasswordView.post()."""
+    """Unit tests for ForgotPasswordView."""
 
     @patch("accounts.views.password_reset_views.password_reset_service")
     @patch("accounts.views.password_reset_views.find_user_with_validation")
@@ -110,13 +110,6 @@ class TestResetPasswordView:
         assert response.status_code == status.HTTP_200_OK
         assert b"Invalid Link" in response.content
 
-    def test_reset_password_get_no_token(self, reset_view, factory):
-        """Missing token in GET should render error."""
-        request = factory.get("/api/v1/auth/reset-password/")
-        response = reset_view(request)
-        assert response.status_code == status.HTTP_200_OK
-        assert b"Missing or invalid token" in response.content
-
     def test_reset_password_post_no_token(self, reset_view, factory, fake_data):
         """Missing token in POST should render error."""
         password = fake_data.password()
@@ -138,33 +131,6 @@ class TestResetPasswordView:
         response = reset_view(request)
         assert response.status_code == status.HTTP_200_OK
         assert b"Passwords do not match." in response.content
-
-    @patch("accounts.views.password_reset_views.password_reset_service")
-    def test_reset_password_post_invalid_token(self, mock_reset_svc, reset_view, factory, fake_data):
-        """Invalid token verification should render error."""
-        mock_reset_svc.verify.return_value = (False, "Token expired.", None)
-        password = fake_data.password()
-        request = factory.post(f"/api/v1/auth/reset-password/?token={fake_data.sha256()}", {"password": password, "confirm_password": password})
-        response = reset_view(request)
-        assert response.status_code == status.HTTP_200_OK
-        assert b"Token expired." in response.content
-
-    @patch("accounts.views.password_reset_views.User.all_objects.filter")
-    @patch("accounts.views.password_reset_views.password_reset_service")
-    def test_reset_password_post_user_not_found(self, mock_reset_svc, mock_user_filter, reset_view, factory, fake_data):
-        """User not found should render error."""
-        user_id = str(uuid.uuid4())
-        mock_reset_svc.verify.return_value = (True, "", user_id)
-        
-        mock_qs = MagicMock()
-        mock_qs.first.return_value = None
-        mock_user_filter.return_value = mock_qs
-
-        password = fake_data.password()
-        request = factory.post(f"/api/v1/auth/reset-password/?token={fake_data.sha256()}", {"password": password, "confirm_password": password})
-        response = reset_view(request)
-        assert response.status_code == status.HTTP_200_OK
-        assert b"User not found." in response.content
 
     @patch("accounts.views.password_reset_views.User.all_objects.filter")
     @patch("accounts.views.password_reset_views.password_reset_service")

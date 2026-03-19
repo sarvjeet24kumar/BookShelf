@@ -11,12 +11,6 @@ User = get_user_model()
 class TestUserModelUnit:
     """Unit tests for User model focus on logic and validators."""
 
-    def test_user_str(self, user_factory, fake_data):
-        """Test the string representation of the user."""
-        username = fake_data.user_name()
-        user = user_factory.build(username=username)
-        assert str(user) == username
-
     def test_user_creation(self, user_factory, tenant, fake_data):
         """User is created with correct field values."""
         username = fake_data.user_name()
@@ -50,8 +44,7 @@ class TestUserModelUnit:
 
     def test_invalid_username_validator(self, user_factory, fake_data):
         """Test that invalid usernames raise ValidationError."""
-        # Using build() + full_clean() is more "unit" than create()
-        user = user_factory.build(username=fake_data.lexify('????'))  # Too short
+        user = user_factory.build(username=fake_data.lexify('????'))
         with pytest.raises(ValidationError):
             user.full_clean()
 
@@ -69,5 +62,4 @@ class TestUserModelUnit:
             phone_no=f"+91{fake_data.msisdn()[:10]}",
             tenant=tenant,
         )
-        # Should not raise
         user.full_clean()

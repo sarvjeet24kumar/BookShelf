@@ -87,6 +87,8 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
     lookup_field = "id"
 
     def get_queryset(self):
+        if self.request.user.role in [UserRole.SUPER_ADMIN, UserRole.ADMIN]:
+            return User.all_objects.all()
         return User.objects.all()
 
     def get_serializer(self, *args, **kwargs):
