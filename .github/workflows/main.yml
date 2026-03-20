@@ -175,5 +175,19 @@ jobs:
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:stable
 
             DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:stable docker compose up -d
+            for i in {1..10}; do
+            STATUS=$(docker inspect --format='{{.State.Health.Status}}' bookshelf-api || echo "starting")
 
+            echo "Rollback health status: $STATUS"
+
+            if [ "$STATUS" = "healthy" ]; then
+              echo "Rollback successful "
+              exit 0
+            fi
+
+            sleep 5
+            done
+
+            echo "Rollback failed "
             exit 1
+          
