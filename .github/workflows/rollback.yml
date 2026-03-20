@@ -1,0 +1,33 @@
+name: Rollback Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for rollback"
+        required: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Rollback on EC2
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/django-app
+
+            docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+
+            # Pull stable image
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:stable
+
+            # Stop current container
+            docker compose down
+
+            # Start using stable image
+            DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:stable docker compose up -d

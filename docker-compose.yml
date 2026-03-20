@@ -7,15 +7,14 @@ services:
       - "${DOCKER_REDIS_PORT}:6379"
 
   api:
-    build: .
     image: ${DOCKER_IMAGE:-bookshelf-api}
     container_name: bookshelf-api
+    command: web 
     depends_on:
       - redis
     env_file:
       - .env
     environment:
-      - SERVICE=web
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=${DOCKER_REDIS_URL}
       - CELERY_BROKER_URL=${DOCKER_CELERY_BROKER_URL}
@@ -72,15 +71,14 @@ services:
     restart: unless-stopped
 
   worker:
-    build: .
     image: ${DOCKER_IMAGE:-bookshelf-api}
     container_name: bookshelf-worker
+    command: celery_worker
     depends_on:
       - redis
     env_file:
       - .env
     environment:
-      - SERVICE=celery_worker
       - NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
       - NEW_RELIC_APP_NAME=${NEW_RELIC_APP_NAME:-BookShelf-Worker}
       - DATABASE_URL=${DATABASE_URL}
@@ -90,15 +88,14 @@ services:
       - TZ=Asia/Kolkata
 
   beat:
-    build: .
     image: ${DOCKER_IMAGE:-bookshelf-api}
     container_name: bookshelf-beat
+    command: celery_beat
     depends_on:
       - redis
     env_file:
       - .env
     environment:
-      - SERVICE=celery_beat
       - NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
       - NEW_RELIC_APP_NAME=${NEW_RELIC_APP_NAME:-BookShelf-Beat}
       - DATABASE_URL=${DATABASE_URL}
@@ -108,7 +105,6 @@ services:
       - TZ=Asia/Kolkata
 
   locust:
-    build: .
     image: ${DOCKER_IMAGE:-bookshelf-api}
     container_name: bookshelf-locust
     depends_on:

@@ -2,11 +2,16 @@
 
 # entrypoint.sh — Routes to the correct service based on $SERVICE env variable
 set -e
+SERVICE_TYPE=${SERVICE:-$1}
+SERVICE_TYPE=${SERVICE_TYPE:-web}
 
+echo "[entrypoint] Service: $SERVICE_TYPE"
 # Standard Django commands for the 'web' service
-if [ "$SERVICE" = "web" ]; then
-    echo "[entrypoint] Running database migrations..."
-    uv run python manage.py migrate --noinput
+if [ "$SERVICE_TYPE" = "web" ]; then
+    if [ "$RUN_MIGRATIONS" = "true" ]; then
+        echo "[entrypoint] Running database migrations..."
+        uv run python manage.py migrate --noinput
+    fi
 
     echo "[entrypoint] Seeding super admin..."
     uv run python manage.py create_superadmin
@@ -24,12 +29,12 @@ if [ "$SERVICE" = "web" ]; then
       --access-logfile - \
       --error-logfile -
 
-elif [ "$SERVICE" = "celery_worker" ]; then
+elif [ "$SERVICE_TYPE" = "celery_worker" ]; then
     echo "[entrypoint] Starting Celery Worker with New Relic..."
     export NEW_RELIC_CONFIG_FILE=/app/newrelic.ini
     exec newrelic-admin run-program celery -A config worker --loglevel=info
 
-elif [ "$SERVICE" = "celery_beat" ]; then
+elif [ "$SERVICE_TYPE" = "celery_beat" ]; then
     echo "[entrypoint] Starting Celery Beat with New Relic..."
     export NEW_RELIC_CONFIG_FILE=/app/newrelic.ini
     exec newrelic-admin run-program celery -A config beat --loglevel=info
