@@ -149,6 +149,8 @@ jobs:
             echo '${{ secrets.PROD_ENV_FILE }}' > /home/ubuntu/django-app/.env
             
             docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+            echo "Cleaning old Docker images..."
+            docker image prune -a -f
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest
 
             RUN_MIGRATIONS=true DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest docker compose up -d --force-recreate
