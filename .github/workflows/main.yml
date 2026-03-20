@@ -115,18 +115,16 @@ jobs:
 
       - name: Push to Docker Hub
         run: |
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:${{ github.sha }}
-          # Use feat/test-cicd as the 'stable' branch for now
-          if [ "${{ github.ref }}" == "refs/heads/feat/test-cicd" ] || [ "${{ github.ref }}" == "refs/heads/feat/testcase" ]; then
+            # Always push immutable image
+            docker push ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:${{ github.sha }}
 
+            # Always tag + push latest
             docker tag ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:${{ github.sha }} \
-                      ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:stable
+                      ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest
 
-            # Push both latest + stable
             docker push ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest
-            docker push ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:stable
-          fi
 
+      
   deploy:
     needs: build-scan-push
     runs-on: ubuntu-latest
@@ -157,44 +155,52 @@ jobs:
 
             echo "Waiting for container to become healthy..."
 
+            # increase wait time (IMPORTANT)
             for i in {1..10}; do
-              STATUS=$(docker inspect --format='{{.State.Health.Status}}' bookshelf-api || echo "starting")
+              STATUS=$(docker inspect --format='{{.State.Health.Status}}' bookshelf-api 2>/dev/null || echo "starting")
 
               echo "Health status: $STATUS"
 
               if [ "$STATUS" = "healthy" ]; then
                 echo "Deployment successful"
 
-                #  mark this version as stable
+                # mark stable ONLY after success
                 docker tag ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest \
                           ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:stable
 
                 docker push ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:stable
-                echo "Deployment successful "
+
                 exit 0
               fi
 
               sleep 5
             done
 
-            echo "Deployment failed  — triggering rollback..."
+            echo "Deployment failed — triggering rollback..."
 
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:stable
 
-            DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:stable docker compose up -d
+            #  force recreate
+            DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:stable \
+            docker compose up -d --force-recreate
+
+            echo "Waiting before checking rollback health..."
+            sleep 10   # give container time to start
+
+            echo "Checking rollback health..."
+
             for i in {1..10}; do
-            STATUS=$(docker inspect --format='{{.State.Health.Status}}' bookshelf-api || echo "starting")
+              STATUS=$(docker inspect --format='{{.State.Health.Status}}' bookshelf-api 2>/dev/null || echo "starting")
 
-            echo "Rollback health status: $STATUS"
+              echo "Rollback health status: $STATUS"
 
-            if [ "$STATUS" = "healthy" ]; then
-              echo "Rollback successful "
-              exit 0
-            fi
+              if [ "$STATUS" = "healthy" ]; then
+                echo "Rollback successful"
+                exit 0
+              fi
 
-            sleep 5
+              sleep 5
             done
 
-            echo "Rollback failed "
+            echo "Rollback failed"
             exit 1
-          
