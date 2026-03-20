@@ -163,6 +163,13 @@ jobs:
               echo "Health status: $STATUS"
 
               if [ "$STATUS" = "healthy" ]; then
+                echo "Deployment successful"
+
+                #  mark this version as stable
+                docker tag ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest \
+                          ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:stable
+
+                docker push ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:stable
                 echo "Deployment successful "
                 exit 0
               fi
