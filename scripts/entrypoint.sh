@@ -8,8 +8,8 @@ SERVICE_TYPE=${SERVICE_TYPE:-web}
 echo "[entrypoint] Service: $SERVICE_TYPE"
 # Standard Django commands for the 'web' service
 if [ "$SERVICE_TYPE" = "web" ]; then
-    echo " FORCING FAILURE FOR ROLLBACK TEST"
-    exit 1 
+    # echo " FORCING FAILURE FOR ROLLBACK TEST"
+    # exit 1 
     if [ "$RUN_MIGRATIONS" = "true" ]; then
         echo "[entrypoint] Running database migrations..."
         uv run python manage.py migrate --noinput
