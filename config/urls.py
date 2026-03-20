@@ -13,6 +13,7 @@ urlpatterns = [
     path("api/v1/", include("tenants.urls")),
     path("api/v1/payments/", include("payments.urls")),
     path("silk/", include("silk.urls", namespace="silk")),
+    path("", include("django_prometheus.urls")),
 ]
 
 if settings.DEBUG:

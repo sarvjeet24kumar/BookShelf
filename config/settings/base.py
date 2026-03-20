@@ -53,9 +53,11 @@ INSTALLED_APPS = [
     "payments",
     "silk",
     "debug_toolbar",
+    "django_prometheus",
 ]
 
 MIDDLEWARE = [
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "common.middleware.RequestIDMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -67,6 +69,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "common.middleware.API404Middleware",
+    "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
 
 
