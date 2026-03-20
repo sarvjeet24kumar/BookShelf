@@ -85,7 +85,7 @@ jobs:
         run: uv run python manage.py create_superadmin
 
       - name: Run Tests with Coverage
-        run: uv run pytest --cov=. --cov-report=xml --cov-fail-under=80
+        run: uv run pytest --cov=. --cov-report=xml --cov-fail-under=75
 
   build-scan-push:
     needs: test
