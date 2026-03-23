@@ -1,0 +1,206 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, feat/test-cicd ,feat/testcase]
+  pull_request:
+    branches: [ main, feat/test-cicd ,feat/testcase]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_BookShelf
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_BookShelf
+      REDIS_URL: redis://localhost:6379/1
+      CELERY_BROKER_URL: redis://localhost:6379/0
+      CELERY_RESULT_BACKEND: redis://localhost:6379/0
+      SECRET_KEY: django-insecure-test-key
+      DEBUG: "True"
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      OTP_EXPIRY_MINUTES: "5"
+      USER_DATA_RETENTION_DAYS: "30"
+      UNVERIFIED_USER_CLEANUP_HOURS: "24"
+      SITE_URL: http://localhost:8000
+      EMAIL_HOST_USER: test@example.com
+      EMAIL_HOST_PASSWORD: test
+      SUPERADMIN_PASSWORD: Set@1234
+      JWT_ACCESS_TOKEN_MINUTES: "120"
+      JWT_REFRESH_TOKEN_DAYS: "7"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install dependencies
+        run: uv sync --all-groups
+
+      - name: Run Migrations
+        run: uv run python manage.py migrate --no-input
+
+      - name: Create Superadmin
+        run: uv run python manage.py create_superadmin
+
+      - name: Run Tests with Coverage
+        run: uv run pytest --cov=. --cov-report=xml --cov-fail-under=75
+
+  build-scan-push:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker Image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest .
+          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:${{ github.sha }}
+
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:${{ github.sha }}
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL'
+
+      - name: Push to Docker Hub
+        run: |
+            # Always push immutable image
+            docker push ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:${{ github.sha }}
+
+            # Always tag + push latest
+            docker tag ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:${{ github.sha }} \
+                      ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest
+
+            docker push ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest
+
+      
+  deploy:
+    needs: build-scan-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/feat/test-cicd' || github.ref == 'refs/heads/feat/testcase'
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/django-app
+            # Pull latest code from the current branch
+            git fetch origin
+            git checkout ${{ github.ref_name }}
+            git pull origin ${{ github.ref_name }}
+            
+            # Create/overwrite .env file with secrets
+            echo '${{ secrets.PROD_ENV_FILE }}' > /home/ubuntu/django-app/.env
+            
+            docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+            echo "Cleaning old Docker images..."
+            docker image prune -a -f
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest
+
+            RUN_MIGRATIONS=true DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest docker compose up -d --force-recreate
+
+            echo "Waiting for container to become healthy..."
+
+            # increase wait time (IMPORTANT)
+            for i in {1..10}; do
+              STATUS=$(docker inspect --format='{{.State.Health.Status}}' bookshelf-api 2>/dev/null || echo "starting")
+
+              echo "Health status: $STATUS"
+
+              if [ "$STATUS" = "healthy" ]; then
+                echo "Deployment successful"
+
+                # mark stable ONLY after success
+                docker tag ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:latest \
+                          ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:stable
+
+                docker push ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:stable
+
+                exit 0
+              fi
+
+              sleep 5
+            done
+
+            echo "Deployment failed — triggering rollback..."
+
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:stable
+
+            #  force recreate
+            DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/bookshelf:stable \
+            docker compose up -d --force-recreate
+
+            echo "Waiting before checking rollback health..."
+            sleep 10   # give container time to start
+
+            echo "Checking rollback health..."
+
+            for i in {1..10}; do
+              STATUS=$(docker inspect --format='{{.State.Health.Status}}' bookshelf-api 2>/dev/null || echo "starting")
+
+              echo "Rollback health status: $STATUS"
+
+              if [ "$STATUS" = "healthy" ]; then
+                echo "Rollback successful"
+                exit 0
+              fi
+
+              sleep 5
+            done
+
+            echo "Rollback failed"
+            exit 1

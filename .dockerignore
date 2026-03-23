@@ -1,0 +1,21 @@
+.git
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.coverage
+htmlcov
+.vscode
+.DS_Store
+*.swp
+*.bak
+*.log
+celerybeat-schedule*
+
+# Tests and Performance Testing
+tests/
+locustfile.py
+locust_tokens.txt
+*.lprof
+.silk/

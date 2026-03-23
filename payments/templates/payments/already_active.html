@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Already Premium</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 100px auto;
+            background: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 24px;
+            text-align: center;
+        }
+
+        h1 {
+            color: blue;
+            margin-bottom: 12px;
+        }
+
+        .status {
+            font-weight: bold;
+            margin-bottom: 16px;
+        }
+
+        p {
+            margin: 8px 0;
+        }
+
+        ul {
+            text-align: left;
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 6px;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 16px;
+            text-decoration: none;
+            color: #0d6efd;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Already Premium</h1>
+
+        <div class="status">Status: Active</div>
+
+        <p>{{ detail }}</p>
+
+        {% if activated_at %}
+        <p><strong>Activated on:</strong> {{ activated_at|date:"F d, Y" }}</p>
+        {% endif %}
+
+        <ul>
+            <li>Unlimited Books & Genres</li>
+
+        </ul>
+    </div>
+
+</body>
+
+</html>

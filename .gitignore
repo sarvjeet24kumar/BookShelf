@@ -3,6 +3,8 @@ build/
 dist/
 wheels/
 *.log
+*.log*
+logs/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -14,3 +16,28 @@ media
 env/
 venv/
 ENV/
+
+
+# Celery Beat schedule files
+celerybeat-schedule
+celerybeat-schedule-shm
+celerybeat-schedule-wal
+celerybeat.pid
+# Redis
+dump.rdb.DS_Store
+
+*.pem
+burial
+
+# Performance & Profiling
+locust_tokens.txt
+locust-log.html
+*.lprof
+.silk/
+newrelic.ini
+htmlcov/
+.coverage
+.cache
+.pytest_cache/
+
+profiles/

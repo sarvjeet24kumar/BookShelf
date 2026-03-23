@@ -10,7 +10,7 @@ class CommonPagination(PageNumberPagination):
     def get_paginated_response(self, data):
         return Response(
             {
-                "count": self.page.paginator.count,
+                "total_count": self.page.paginator.count,
                 "page": self.page.number,
                 "page_size": self.get_page_size(self.request),
                 "next": self.get_next_link(),

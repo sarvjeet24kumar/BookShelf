@@ -1,0 +1,212 @@
+from rest_framework import serializers
+from common.serializers.base import BaseModelSerializer
+from django.db import transaction
+from books.models import Book, Genre, BookGenre
+from common.enums import RequestStatus, UserRole
+from django.utils import timezone
+
+
+class BookListSerializer(BaseModelSerializer):
+    """Serializer for listing books."""
+
+    genres = serializers.SerializerMethodField()
+    created_by = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Book
+        fields = [
+            "id",
+            "title",
+            "author",
+            "isbn",
+            "published_year",
+            "request_status",
+            "created_by",
+            "genres",
+            "deleted_at",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+    def get_genres(self, book):
+        """Get list of genre names for this book."""
+        return [
+            bg.genre.name for bg in book.book_genres.all()
+            if bg.deleted_at is None
+        ]
+
+    def get_created_by(self, book):
+        """Get minimal user info for the creator."""
+        if book.created_by_id:
+            return {
+                "id": str(book.created_by_id),
+            }
+        return None
+
+
+class BookCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating books."""
+
+    genres = serializers.ListField(
+        child=serializers.UUIDField(),
+        write_only=True,
+    )
+    request_status = serializers.ChoiceField(
+        choices=RequestStatus.choices,
+        required=False,
+    )
+
+    class Meta:
+        model = Book
+        fields = [
+            "title",
+            "author",
+            "isbn",
+            "published_year",
+            "request_status",
+            "genres",
+        ]
+
+    def validate_genres(self, value):
+        """Validate that all genre UUIDs exist."""
+        if not value:
+            raise serializers.ValidationError("At least one genre is required.")
+
+        existing_genres = Genre.objects.filter(id__in=value, deleted_at__isnull=True)
+        if not existing_genres.exists():
+            raise serializers.ValidationError("None of the provided genre IDs exist.")
+
+        existing_ids = set(existing_genres.values_list("id", flat=True))
+        missing_ids = set(value) - existing_ids
+        if missing_ids:
+            raise serializers.ValidationError(
+                f"Genre IDs not found: {list(missing_ids)}"
+            )
+
+        return value
+
+    def validate_isbn(self, value):
+        """Check ISBN uniqueness."""
+        if Book.objects.filter(isbn=value).exists():
+            raise serializers.ValidationError("ISBN already exists.")
+        return value
+
+    @transaction.atomic
+    def create(self, validated_data):
+        genre_ids = validated_data.pop("genres", [])
+        request = self.context.get("request")
+        user = request.user
+        validated_data["created_by"] = user
+        validated_data["tenant"] = user.tenant
+
+        if user.role == UserRole.ADMIN:
+            if "request_status" not in validated_data:
+                validated_data["request_status"] = RequestStatus.APPROVED
+        else:
+            validated_data["request_status"] = RequestStatus.PENDING
+
+        book = Book.objects.create(**validated_data)
+
+        genres = Genre.objects.filter(id__in=genre_ids)
+        for genre in genres:
+            BookGenre.objects.create(book=book, genre=genre)
+
+        return book
+
+
+class BookUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for updating books (admin only)."""
+
+    genres = serializers.ListField(
+        child=serializers.UUIDField(),
+        required=False,
+        write_only=True,
+    )
+
+    class Meta:
+        model = Book
+        fields = [
+            "title",
+            "author",
+            "published_year",
+            "request_status",
+            "deleted_at",
+            "genres",
+        ]
+        extra_kwargs = {
+            "title": {"required": False},
+            "author": {"required": False},
+            "published_year": {"required": False},
+            "request_status": {"required": False},
+            "deleted_at": {"required": False, "allow_null": True},
+        }
+
+    def validate(self, data):
+        """Validate role-based permissions for fields."""
+        request = self.context.get("request")
+        user = request.user if request else None
+
+        is_admin = user and user.role == UserRole.ADMIN
+        if ("request_status" in data or "deleted_at" in data) and not is_admin:
+            error_msg = {}
+            if "request_status" in data:
+                error_msg["request_status"] = (
+                    "Only admins can change the request status."
+                )
+            if "deleted_at" in data:
+                error_msg["deleted_at"] = "Only admins can restore deleted books."
+            raise serializers.ValidationError(error_msg)
+
+        return data
+
+    def validate_request_status(self, value):
+        """Validate request_status is a valid choice."""
+        valid_statuses = [choice[0] for choice in RequestStatus.choices]
+        if value.upper() not in valid_statuses:
+            raise serializers.ValidationError(
+                f"Invalid status. Allowed: {', '.join(valid_statuses)}"
+            )
+        return value.upper()
+
+    def validate_genres(self, value):
+        """Validate that all genre UUIDs exist."""
+        if not value:
+            return value
+
+        existing_genres = Genre.objects.filter(id__in=value, deleted_at__isnull=True)
+        existing_ids = set(existing_genres.values_list("id", flat=True))
+        missing_ids = set(value) - existing_ids
+
+        if missing_ids:
+            raise serializers.ValidationError(
+                f"Genre IDs not found: {list(missing_ids)}"
+            )
+
+        return value
+
+    def update(self, instance, validated_data):
+        """Update book and optionally replace genres."""
+        genre_ids = validated_data.pop("genres", None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save(update_fields=list(validated_data.keys()))
+
+        if genre_ids is not None:
+            new_genre_ids = set(genre_ids)
+            current_genre_ids = set(
+                instance.book_genres.filter(deleted_at__isnull=True).values_list(
+                    "genre_id", flat=True
+                )
+            )
+            to_remove = current_genre_ids - new_genre_ids
+            if to_remove:
+                instance.book_genres.filter(genre_id__in=to_remove).update(
+                    deleted_at=timezone.now()
+                )
+
+            to_add = new_genre_ids - current_genre_ids
+            for genre_id in to_add:
+                BookGenre.objects.create(book=instance, genre_id=genre_id)
+
+        return instance
